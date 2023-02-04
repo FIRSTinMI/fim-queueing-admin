@@ -1,0 +1,51 @@
+﻿@using fim_queueing_admin.Hubs
+@inject DisplayHubManager Manager
+@{
+  ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Welcome</h1>
+  <table class="table">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Route</th>
+      <th>Event Code</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @{
+      var connections = Manager.GetConnections();
+    }
+    @foreach (var (cId, info) in connections)
+    {
+      <tr>
+        <td>@cId</td>
+        <td>@info.Route</td>
+        <td>@info.EventCode</td>
+        <td><a asp-action="Manage" asp-route-id="@cId">Manage</a></td>
+      </tr>
+    }
+    </tbody>
+  </table>
+  @if (!connections.Any())
+  {
+    <p>No connections...</p>
+  }
+  
+  <div class="mt-5">
+    <p class="text-danger">BE CAREFUL: This will affect all displays at all events</p>
+    <form method="post" asp-action="SendRefreshToAll" class="d-inline-block">
+      <button class="btn btn-danger"
+              onclick="if (!confirm('Are you sure you want to refresh all displays?')) event.preventDefault()"
+              >Force Refresh ALL</button>
+    </form>
+    <form method="post" asp-action="IdentifyAll" class="d-inline-block">
+      <button class="btn btn-danger"
+              onclick="if (!confirm('Are you sure you want to display the ID on all displays?')) event.preventDefault()"
+              >Identify ALL</button>
+    </form>
+  </div>
+</div>

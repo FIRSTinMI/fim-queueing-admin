@@ -1,0 +1,60 @@
+﻿@using Firebase.Database
+@using TimeZoneConverter
+@inject FirebaseClient Client
+@{
+  ViewData["Title"] = "Events";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Events</h1>
+  </div>
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Event key</th>
+      <th>Event code</th>
+      <th>Name</th>
+      <th>Status</th>
+      <th>Starts</th>
+      <th>Ends</th>
+      @* <th>Actions</th> *@
+    </tr>
+    </thead>
+    <tbody>
+    @{
+      // Note: Right now we assume EST for all event times. It's good enough
+      var estNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TZConvert.GetTimeZoneInfo("America/Detroit"));
+      var season = await Client.Child("/current_season").OnceSingleAsync<string>();
+      var events = await Client.Child($"/seasons/{season}/events").OnceAsync<dynamic>();
+      var orderedEvents = events.OrderBy(x => x.Object.start);
+    }
+    Eastern Time: @estNow
+    @foreach (var evt in orderedEvents)
+    {
+      var start = (DateTime)evt.Object.start;
+      var end = (DateTime)evt.Object.end;
+      <tr class="@(start < estNow && end > estNow ? "table-success" : "")">
+        <td>@evt.Key</td>
+        <td>@evt.Object.eventCode</td>
+        <td>@evt.Object.name</td>
+        <td>@evt.Object.state</td>
+        <td>@(((DateTime)evt.Object.start).ToShortDateString())</td>
+        <td>@(((DateTime)evt.Object.end).ToShortDateString())</td>
+        @* <td><a asp-action="Index" asp-route-id="@evt.Key">Manage</a></td> *@
+      </tr>
+    }
+    </tbody>
+  </table>
+  @if (!events.Any())
+  {
+    <p>No connections...</p>
+  }
+  
+  @* <div class="mt-5"> *@
+  @*   <p class="text-danger">BE CAREFUL: This will do a hard reload of all displays at all events</p> *@
+  @*   <form method="post" asp-action="SendRefreshToAll" class="d-inline-block"> *@
+  @*     <button class="btn btn-danger">Force Refresh ALL</button> *@
+  @*   </form> *@
+  @* </div> *@
+</div>

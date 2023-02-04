@@ -1,0 +1,50 @@
+﻿@using fim_queueing_admin.Hubs
+@inject DisplayHubManager Manager
+@{
+  ViewData["Title"] = "Manage";
+}
+@{
+  var connection = Manager.GetConnections()[(string)ViewBag.id];
+}
+<div class="container">
+  <h1 class="text-center">Manage</h1>
+  
+  <h2>Information</h2>
+  <dl>
+    <dt>Connection ID</dt>
+    <dd>@((string)ViewBag.id)</dd>
+    <dt>Route</dt>
+    <dd>@connection.Route</dd>
+    <dt>Event Code</dt>
+    <dd>@connection.EventCode</dd>
+    <dt>Event Key</dt>
+    <dd>@connection.EventKey</dd>
+    <dt>Connected Since (UTC)</dt>
+    <dd>@connection.StartTime</dd>
+  </dl>
+  
+  <h2>Actions</h2>
+  <div class="text-center">
+    <ul>
+      <li><b>Force Refresh</b>: Attempts to clear the browser cache, then refreshes the webpage on the display.</li>
+      <li><b>Identify</b>: Shows the connection ID on the display for 15 seconds, to assist in locating.</li>
+      <li><b>Navigate</b>: Take the display to another page inside the SPA (no external links!)</li>
+    </ul>
+  </div>
+    
+  <div class="text-center">
+    <form method="post" asp-action="SendRefresh" asp-route-id="@((string)ViewBag.id)" class="d-inline-block">
+      <button class="btn btn-primary">Force Refresh</button>
+    </form>
+    <form method="post" asp-action="Identify" asp-route-id="@((string)ViewBag.id)" class="d-inline-block">
+      <button class="btn btn-primary">Identify</button>
+    </form>
+  </div>
+  <form method="post" asp-action="SendNewRoute" asp-route-id="@((string)ViewBag.id)">
+    <div class="form-group mb-2">
+      <label for="route">New page</label>
+      <input type="text" id="route" name="route" class="form-control" />
+    </div>
+    <button class="btn btn-primary">Navigate</button>
+  </form>
+</div>

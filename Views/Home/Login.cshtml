@@ -1,0 +1,16 @@
+﻿@model fim_queueing_admin.Controllers.HomeController.LoginModel
+
+@{
+  ViewData["Title"] = "Log In";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Log In</h1>
+  <form asp-action="Login" method="post">
+    <div class="form-group">
+      <label asp-for="Password"></label>
+      <input type="Password" asp-for="Password" class="form-control"></input>
+      <span class="form-text text-danger" asp-validation-for="Password"></span>
+    </div>
+  </form>
+</div>
