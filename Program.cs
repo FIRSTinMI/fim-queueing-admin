@@ -47,6 +47,16 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
     pol.SetIsOriginAllowed(_ => true);
 }));
 
+if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var proxy) && proxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownProxies.Add(IPAddress.Parse(builder.Configuration["ProxyIPAddress"]));
+    });
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
