@@ -3,6 +3,8 @@ using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,7 +49,7 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
     pol.SetIsOriginAllowed(_ => true);
 }));
 
-if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var proxy) && proxy)
+if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)
 {
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
