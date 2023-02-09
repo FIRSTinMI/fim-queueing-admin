@@ -1,3 +1,4 @@
+using fim_queueing_admin;
 using fim_queueing_admin.Hubs;
 using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
@@ -46,6 +47,16 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
     pol.AllowCredentials();
     pol.SetIsOriginAllowed(_ => true);
 }));
+
+// Some stuff will hardly ever change, so just fetch it once at startup.
+// If I cared more this might be an expiring cache
+builder.Services.AddSingleton<GlobalState>(provider =>
+{
+    var season = provider.GetRequiredService<FirebaseClient>().Child("/current_season")
+        .OnceSingleAsync<string>();
+    season.Wait();
+    return new GlobalState(season.Result);
+});
 
 var app = builder.Build();
 

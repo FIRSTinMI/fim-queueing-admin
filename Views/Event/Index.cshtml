@@ -1,6 +1,7 @@
 ﻿@using Firebase.Database
 @using TimeZoneConverter
 @inject FirebaseClient Client
+@inject GlobalState State
 @{
   ViewData["Title"] = "Events";
 }
@@ -18,15 +19,14 @@
       <th>Status</th>
       <th>Starts</th>
       <th>Ends</th>
-      @* <th>Actions</th> *@
+      <th>Actions</th>
     </tr>
     </thead>
     <tbody>
     @{
       // Note: Right now we assume EST for all event times. It's good enough
       var estNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TZConvert.GetTimeZoneInfo("America/Detroit"));
-      var season = await Client.Child("/current_season").OnceSingleAsync<string>();
-      var events = await Client.Child($"/seasons/{season}/events").OnceAsync<dynamic>();
+      var events = await Client.Child($"/seasons/{State.CurrentSeason}/events").OnceAsync<dynamic>();
       var orderedEvents = events.OrderBy(x => x.Object.start);
     }
     Eastern Time: @estNow
@@ -41,7 +41,7 @@
         <td>@evt.Object.state</td>
         <td>@(((DateTime)evt.Object.start).ToShortDateString())</td>
         <td>@(((DateTime)evt.Object.end).ToShortDateString())</td>
-        @* <td><a asp-action="Index" asp-route-id="@evt.Key">Manage</a></td> *@
+        <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
       </tr>
     }
     </tbody>

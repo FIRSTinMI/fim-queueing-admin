@@ -1,0 +1,44 @@
+﻿@using Firebase.Database
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Newtonsoft.Json.Linq
+@inject FirebaseClient Client
+@inject GlobalState State
+@{
+  ViewData["Title"] = "Manage";
+}
+@{
+  var eventData = await Client.Child(
+    $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<JObject>();
+}
+<div class="container">
+  <h1 class="text-center">Manage</h1>
+
+  <h2>Actions</h2>
+
+  <div class="card">
+    <h5 class="card-header">Manually Update State</h5>
+    <div class="card-body">
+      <form method="post" asp-action="UpdateState" asp-route-id="@(ViewData["id"])">
+        <div class="form-group mb-2">
+          <label for="state">New State</label>
+          @{
+            var currentState = eventData.GetValue("state")?.ToString();
+            var eventStateList = Enum.GetNames<EventState>().Select(n => 
+              new SelectListItem(n, n, currentState == n));
+          }
+          <select id="state" name="state" class="form-control" asp-items="eventStateList"></select>
+        </div>
+        <button class="btn btn-primary">Update</button>
+      </form>
+    </div>
+  </div>
+  @* <div class="text-center"> *@
+  @*   <form method="post" asp-action="SendRefresh" asp-route-id="@((string)ViewBag.id)" class="d-inline-block"> *@
+  @*     <button class="btn btn-primary">Force Refresh</button> *@
+  @*   </form> *@
+  @*   <form method="post" asp-action="Identify" asp-route-id="@((string)ViewBag.id)" class="d-inline-block"> *@
+  @*     <button class="btn btn-primary">Identify</button> *@
+  @*   </form> *@
+  @* </div> *@
+  
+</div>
