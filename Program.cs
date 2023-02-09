@@ -4,6 +4,8 @@ using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +59,16 @@ builder.Services.AddSingleton<GlobalState>(provider =>
     season.Wait();
     return new GlobalState(season.Result);
 });
+
+if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownProxies.Add(IPAddress.Parse(builder.Configuration["ProxyIPAddress"]));
+    });
+}
 
 var app = builder.Build();
 
