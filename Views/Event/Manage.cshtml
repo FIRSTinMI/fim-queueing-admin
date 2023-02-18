@@ -1,6 +1,9 @@
 ﻿@using Firebase.Database
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Newtonsoft.Json.Linq
+@using System.Text
+@using System.Reflection
+@using Humanizer
 @inject FirebaseClient Client
 @inject GlobalState State
 @{
@@ -9,9 +12,38 @@
 @{
   var eventData = await Client.Child(
     $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<JObject>();
+  await using var stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("fim_queueing_admin.Assets.EventWelcome.md");
+  if (stream == null) throw new NullReferenceException();
+  using var welcomeText = new StreamReader(stream);
+  var welcome = new StringBuilder(await welcomeText.ReadToEndAsync());
+
+  welcome.Replace("{KEY}", ViewData["id"]?.ToString());
+  var dateStr = "(Unknown Date)";
+  if (DateTime.TryParse(eventData.GetValue("start")?.ToString(), out var date))
+  {
+    dateStr = date.ToString("MMMM ") + date.Day.Ordinalize();
+  }
+  welcome.Replace("{DATE}", dateStr);
+  welcome.Replace("{EVENTNAME}", eventData.GetValue("name")?.ToString());
 }
 <div class="container">
   <h1 class="text-center">Manage</h1>
+  
+  <div class="accordion py-2">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="welcomeHeader">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#welcomeCollapse" 
+                aria-expanded="false" aria-controls="welcomeCollapse">
+          Welcome Message
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse" id="welcomeCollapse">
+        <div class="accordion-body">
+          <pre style="white-space: pre-wrap;" id="welcome">@welcome</pre>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <h2>Actions</h2>
 
@@ -42,3 +74,13 @@
   @* </div> *@
   
 </div>
+
+@section Scripts
+{
+  <script>
+  document.getElementById("welcomeCollapse").addEventListener("shown.bs.collapse", () => {
+    console.log("Shown collapse");
+    window.getSelection().selectAllChildren(document.getElementById("welcome"));
+  });
+  </script>
+}
