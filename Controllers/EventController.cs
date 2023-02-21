@@ -36,4 +36,12 @@ public class EventController : Controller
         await _client.Child($"/seasons/{_state.CurrentSeason}/events/{id}/state").PutAsync($"\"{state}\"");
         return RedirectToAction(nameof(Index));
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> UpdateEmbedLink(string id, [FromForm] string link)
+    {
+        // NOTE: This is like really bad. I might even care if it wasn't restricted to admins only.
+        await _client.Child($"/seasons/{_state.CurrentSeason}/events/{id}/streamEmbedLink").PutAsync($"\"{link}\"");
+        return RedirectToAction(nameof(Index));
+    }
 }

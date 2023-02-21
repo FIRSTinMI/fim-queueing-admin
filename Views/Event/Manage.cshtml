@@ -64,6 +64,23 @@
       </form>
     </div>
   </div>
+  
+  <div class="card mt-3">
+      <h5 class="card-header">Embed Link</h5>
+      <div class="card-body">
+        <form method="post" asp-action="UpdateEmbedLink" asp-route-id="@(ViewData["id"])">
+          <div class="form-group mb-2">
+            <label for="link">Stream Embed Link</label>
+            @{
+              var currentLink = eventData.GetValue("streamEmbedLink")?.ToString();
+            }
+            <input id="link" name="link" class="form-control" value="@currentLink" type="url" />
+            <div class="form-text">Ex: https://player.twitch.tv/?channel=firstinspires21&parent=fim-queueing.web.app&autoplay=true&muted=false</div>
+          </div>
+          <button class="btn btn-primary">Update</button>
+        </form>
+      </div>
+    </div>
   @* <div class="text-center"> *@
   @*   <form method="post" asp-action="SendRefresh" asp-route-id="@((string)ViewBag.id)" class="d-inline-block"> *@
   @*     <button class="btn btn-primary">Force Refresh</button> *@
