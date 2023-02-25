@@ -16,6 +16,7 @@
       <th>Event key</th>
       <th>Event code</th>
       <th>Name</th>
+      <th>Field</th>
       <th>Status</th>
       <th>Starts</th>
       <th>Ends</th>
@@ -38,6 +39,7 @@
         <td>@evt.Key</td>
         <td>@evt.Object.eventCode</td>
         <td>@evt.Object.name</td>
+        <td>@(evt.Object.field ?? "")</td>
         <td>@evt.Object.state</td>
         <td>@(((DateTime)evt.Object.start).ToShortDateString())</td>
         <td>@(((DateTime)evt.Object.end).ToShortDateString())</td>

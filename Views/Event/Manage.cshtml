@@ -39,6 +39,7 @@
       </h2>
       <div class="accordion-collapse collapse" id="welcomeCollapse">
         <div class="accordion-body">
+          <div>Field number: @(eventData.GetValue("field")?.ToString() ?? "Unknown")</div>
           <pre style="white-space: pre-wrap;" id="welcome">@welcome</pre>
         </div>
       </div>
