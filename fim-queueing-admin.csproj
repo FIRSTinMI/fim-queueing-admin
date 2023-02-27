@@ -17,9 +17,9 @@
     </ItemGroup>
     
     <ItemGroup>
-      <None Remove="Assets\EventWelcome.md" />
+      <None Remove="Assets\*" />
       <AdditionalFiles Remove="**\*.cshtml" />
-      <EmbeddedResource Include="Assets\EventWelcome.md" />
+      <EmbeddedResource Include="Assets\*" />
     </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,7 +58,11 @@ builder.Services.AddSingleton<GlobalState>(provider =>
     var season = provider.GetRequiredService<FirebaseClient>().Child("/current_season")
         .OnceSingleAsync<string>();
     season.Wait();
-    return new GlobalState(season.Result);
+    using var versionStream = Assembly.GetEntryAssembly()?
+        .GetManifestResourceStream("fim_queueing_admin.Assets.Version.txt");
+    if (versionStream == null) throw new NullReferenceException("Version info was null");
+    using var version = new StreamReader(versionStream);
+    return new GlobalState(season.Result, version.ReadToEnd());
 });
 
 if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)

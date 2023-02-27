@@ -45,6 +45,11 @@ jobs:
             type=ref,event=pr
           flavor: |
             latest=${{ github.event_name != 'pull_request' }}
+      - name: Populate version info
+        shell: bash
+        run: |
+          echo "branch:$GITHUB_REF sha:${GITHUB_SHA:0:7}" > Assets/Version.txt
+        
       - name: Build and push Docker images
         uses: docker/build-push-action@v3
         with:
