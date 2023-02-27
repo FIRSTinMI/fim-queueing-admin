@@ -27,8 +27,10 @@
     @{
       // Note: Right now we assume EST for all event times. It's good enough
       var estNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TZConvert.GetTimeZoneInfo("America/Detroit"));
-      var events = await Client.Child($"/seasons/{State.CurrentSeason}/events").OnceAsync<dynamic>();
-      var orderedEvents = events.OrderBy(x => x.Object.start);
+      var events = await Client.Child($"/seasons/{State.CurrentSeason}/events")
+        .OnceAsync<dynamic>();
+      var orderedEvents = events.OrderBy(x => x.Object.start)
+        .ThenBy(x => x.Object.field);
     }
     Eastern Time: @estNow
     @foreach (var evt in orderedEvents)
@@ -50,13 +52,6 @@
   </table>
   @if (!events.Any())
   {
-    <p>No connections...</p>
+    <p>No events in this season yet...</p>
   }
-  
-  @* <div class="mt-5"> *@
-  @*   <p class="text-danger">BE CAREFUL: This will do a hard reload of all displays at all events</p> *@
-  @*   <form method="post" asp-action="SendRefreshToAll" class="d-inline-block"> *@
-  @*     <button class="btn btn-danger">Force Refresh ALL</button> *@
-  @*   </form> *@
-  @* </div> *@
 </div>
