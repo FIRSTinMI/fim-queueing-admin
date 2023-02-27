@@ -1,6 +1,5 @@
 ﻿@using Firebase.Database
 @using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Newtonsoft.Json.Linq
 @using System.Text
 @using System.Reflection
 @using Humanizer
@@ -11,7 +10,7 @@
 }
 @{
   var eventData = await Client.Child(
-    $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<JObject>();
+    $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<DbEvent>();
   await using var stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("fim_queueing_admin.Assets.EventWelcome.md");
   if (stream == null) throw new NullReferenceException();
   using var welcomeText = new StreamReader(stream);
@@ -19,12 +18,12 @@
 
   welcome.Replace("{KEY}", ViewData["id"]?.ToString());
   var dateStr = "(Unknown Date)";
-  if (DateTime.TryParse(eventData.GetValue("start")?.ToString(), out var date))
+  if (DateTime.TryParse(eventData.start?.ToString(), out var date))
   {
     dateStr = date.ToString("MMMM ") + date.Day.Ordinalize();
   }
   welcome.Replace("{DATE}", dateStr);
-  welcome.Replace("{EVENTNAME}", eventData.GetValue("name")?.ToString());
+  welcome.Replace("{EVENTNAME}", eventData.name);
 }
 <div class="container">
   <h1 class="text-center">Manage</h1>
@@ -39,7 +38,7 @@
       </h2>
       <div class="accordion-collapse collapse" id="welcomeCollapse">
         <div class="accordion-body">
-          <div>Field number: @(eventData.GetValue("field")?.ToString() ?? "Unknown")</div>
+          <div>Field number: @(eventData.field != null ? eventData.field : "Unknown")</div>
           <pre style="white-space: pre-wrap;" id="welcome">@welcome</pre>
         </div>
       </div>
@@ -55,7 +54,7 @@
         <div class="form-group mb-2">
           <label for="state">New State</label>
           @{
-            var currentState = eventData.GetValue("state")?.ToString();
+            var currentState = eventData.state?.ToString();
             var eventStateList = Enum.GetNames<EventState>().Select(n => 
               new SelectListItem(n, n, currentState == n));
           }
@@ -73,10 +72,10 @@
           <div class="form-group mb-2">
             <label for="link">Stream Embed Link</label>
             @{
-              var currentLink = eventData.GetValue("streamEmbedLink")?.ToString();
+              var currentLink = eventData.streamEmbedLink;
             }
             <input id="link" name="link" class="form-control" value="@currentLink" type="url" />
-            <div class="form-text">Ex: https://player.twitch.tv/?channel=firstinspires21&parent=fim-queueing.web.app&autoplay=true&muted=false</div>
+            <div class="form-text">Ex: https://player.twitch.tv/?channel=firstinspires31&parent=fim-queueing.web.app&autoplay=true&muted=false</div>
           </div>
           <button class="btn btn-primary">Update</button>
         </form>

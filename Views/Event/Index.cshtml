@@ -1,4 +1,5 @@
 ﻿@using Firebase.Database
+@using Newtonsoft.Json.Linq
 @using TimeZoneConverter
 @inject FirebaseClient Client
 @inject GlobalState State
@@ -28,23 +29,23 @@
       // Note: Right now we assume EST for all event times. It's good enough
       var estNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TZConvert.GetTimeZoneInfo("America/Detroit"));
       var events = await Client.Child($"/seasons/{State.CurrentSeason}/events")
-        .OnceAsync<dynamic>();
+        .OnceAsync<DbEvent>();
       var orderedEvents = events.OrderBy(x => x.Object.start)
         .ThenBy(x => x.Object.field);
     }
     Eastern Time: @estNow
     @foreach (var evt in orderedEvents)
     {
-      var start = (DateTime)evt.Object.start;
-      var end = (DateTime)evt.Object.end;
+      var start = evt.Object.start;
+      var end = evt.Object.end;
       <tr class="@(start < estNow && end > estNow ? "table-success" : "")">
         <td>@evt.Key</td>
         <td>@evt.Object.eventCode</td>
         <td>@evt.Object.name</td>
-        <td>@(evt.Object.field ?? "")</td>
+        <td>@(evt.Object.field.ToString() ?? "")</td>
         <td>@evt.Object.state</td>
-        <td>@(((DateTime)evt.Object.start).ToShortDateString())</td>
-        <td>@(((DateTime)evt.Object.end).ToShortDateString())</td>
+        <td>@(start?.ToShortDateString())</td>
+        <td>@(end?.ToShortDateString())</td>
         <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
       </tr>
     }
