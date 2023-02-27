@@ -1,5 +1,5 @@
 Hello!
-Thank you for volunteering with FIRST in Michigan as AV. Here is the information you’ll need to get the queueing display set up for {EVENTNAME}.
+Thank you for volunteering with FIRST in Michigan as AV. Here is the information you’ll need to get the queueing display set up for the {EVENTNAME}.
 - Event key: `{KEY}` (Note: Please do not share your event key.)
 - Queueing display link: https://fim-queueing.web.app
 
