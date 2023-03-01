@@ -22,7 +22,7 @@
     @foreach (var (cId, info) in connections)
     {
       <tr>
-        <td>@cId</td>
+        <td><span title="@cId">@cId[..4]&hellip;@cId[^4..]</span></td>
         <td>@info.Route</td>
         <td>@info.EventCode</td>
         <td><a asp-action="Manage" asp-route-id="@cId">Manage</a></td>
