@@ -10,4 +10,6 @@ public class DbEvent
     public DateTime? end { get; set; }
     public string? streamEmbedLink { get; set; }
     public EventState? state { get; set; }
+    public int? currentMatchNumber { get; set; }
+    public int? numQualMatches { get; set; }
 }

@@ -38,12 +38,17 @@
     {
       var start = evt.Object.start;
       var end = evt.Object.end;
+      var state = evt.Object.state.ToString();
+      if (evt.Object.state == EventState.QualsInProgress)
+      {
+        state += $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})";
+      }
       <tr class="@(start < estNow && end > estNow ? "table-success" : "")">
         <td>@evt.Key</td>
         <td>@evt.Object.eventCode</td>
         <td>@evt.Object.name</td>
         <td>@(evt.Object.field.ToString() ?? "")</td>
-        <td>@evt.Object.state</td>
+        <td>@state</td>
         <td>@(start?.ToShortDateString())</td>
         <td>@(end?.ToShortDateString())</td>
         <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
