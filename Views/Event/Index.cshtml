@@ -1,63 +1,86 @@
 ﻿@using Firebase.Database
-@using Newtonsoft.Json.Linq
-@using TimeZoneConverter
 @inject FirebaseClient Client
 @inject GlobalState State
 @{
   ViewData["Title"] = "Events";
+
+  var now = DateTime.UtcNow;
+  
+  async Task TableTemplate(IEnumerable<FirebaseObject<DbEvent>> events)
+  {
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Event key</th>
+        <th>Event code</th>
+        <th>Name</th>
+        <th>Field</th>
+        <th>Status</th>
+        <th>Starts</th>
+        <th>Ends</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      @foreach (var evt in events)
+      {
+        var start = evt.Object.start;
+        var end = evt.Object.end;
+        var state = evt.Object.state.ToString();
+        if (evt.Object.state == EventState.QualsInProgress)
+        {
+          state += $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})";
+        }
+        <tr class="@(start < now && end > now ? "table-success" : "")">
+          <td>@evt.Key</td>
+          <td>@evt.Object.eventCode</td>
+          <td>@evt.Object.name</td>
+          <td>@(evt.Object.field.ToString() ?? "")</td>
+          <td>@state</td>
+          <td>@(start?.ToShortDateString())</td>
+          <td>@(end?.ToShortDateString())</td>
+          <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  }
+
+  bool IsActive(FirebaseObject<DbEvent> x) => x.Object.start < now && x.Object.end > now;
 }
 
 <div class="container">
   <div class="text-center">
     <h1 class="display-4">Events</h1>
   </div>
-  <table class="table">
-    <thead>
-    <tr>
-      <th>Event key</th>
-      <th>Event code</th>
-      <th>Name</th>
-      <th>Field</th>
-      <th>Status</th>
-      <th>Starts</th>
-      <th>Ends</th>
-      <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    @{
-      // Note: Right now we assume EST for all event times. It's good enough
-      var estNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TZConvert.GetTimeZoneInfo("America/Detroit"));
-      var events = await Client.Child($"/seasons/{State.CurrentSeason}/events")
-        .OnceAsync<DbEvent>();
-      var orderedEvents = events.OrderBy(x => x.Object.start)
-        .ThenBy(x => x.Object.field);
-    }
-    Eastern Time: @estNow
-    @foreach (var evt in orderedEvents)
-    {
-      var start = evt.Object.start;
-      var end = evt.Object.end;
-      var state = evt.Object.state.ToString();
-      if (evt.Object.state == EventState.QualsInProgress)
-      {
-        state += $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})";
-      }
-      <tr class="@(start < estNow && end > estNow ? "table-success" : "")">
-        <td>@evt.Key</td>
-        <td>@evt.Object.eventCode</td>
-        <td>@evt.Object.name</td>
-        <td>@(evt.Object.field.ToString() ?? "")</td>
-        <td>@state</td>
-        <td>@(start?.ToShortDateString())</td>
-        <td>@(end?.ToShortDateString())</td>
-        <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
-      </tr>
-    }
-    </tbody>
-  </table>
+  @{
+    var events = await Client.Child($"/seasons/{State.CurrentSeason}/events")
+     .OnceAsync<DbEvent>();
+   var orderedEvents = events.OrderBy(x => x.Object.start)
+     .ThenBy(x => x.Object.field).ToList();
+  }
   @if (!events.Any())
   {
     <p>No events in this season yet...</p>
+  }
+  else
+  {
+    <div>
+      <h2>Happening Now</h2>
+      @{
+        var currentEvents = orderedEvents.Where(IsActive);
+        if (!currentEvents.Any())
+        {
+          <p>No events are currently happening... Take a break.</p>
+        }
+        else
+        {
+          await TableTemplate(orderedEvents.Where(IsActive));
+        }
+      }
+    
+      <h2>Future and Past</h2>
+      @{ await TableTemplate(orderedEvents.Where(x => !IsActive(x))); }
+    </div>
   }
 </div>

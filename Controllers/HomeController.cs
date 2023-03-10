@@ -39,13 +39,13 @@ public class HomeController : Controller
     public class LoginModel
     {
         [PasswordPropertyText]
-        public string Password { get; set; }
+        public string? Password { get; set; }
     }
 
     [HttpPost]
     public async Task<IActionResult> Login([FromForm] LoginModel loginModel)
     {
-        if (loginModel.Password != _configuration["Password"])
+        if (string.IsNullOrWhiteSpace(loginModel.Password) || loginModel.Password != _configuration["Password"])
         {
             _logger.LogWarning("Failed login from user at {IP}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError("password", "Incorrect password");
