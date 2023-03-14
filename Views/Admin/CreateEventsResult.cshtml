@@ -1,0 +1,54 @@
+@model fim_queueing_admin.Services.CreateEventsResult
+@{
+  ViewData["Title"] = "Create Events";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Create Events</h1>
+</div>
+
+@if (Model.Errors.Any())
+{
+  <div class="alert alert-warning" role="alert">
+    <p>Some errors occurred while creating events:</p>
+    <ul>
+      @foreach (var error in Model.Errors)
+      {
+        <li>@error</li>
+      }
+    </ul>
+  </div>
+}
+else
+{
+  <div class="alert alert-success" role="alert">
+    No errors!
+  </div>
+}
+
+@if (Model.CreatedEvents.Any())
+{
+  <table class="table">
+    <thead>
+    <th>Key</th>
+    <th>Code</th>
+    <th>Name</th>
+    <th>Start</th>
+    </thead>
+    <tbody>
+    @foreach (var evt in Model.CreatedEvents)
+    {
+      <tr>
+        <td>@evt.EventKey</td>
+        <td>@evt.EventCode</td>
+        <td>@evt.EventName</td>
+        <td>@evt.StartDate.DateTime.ToShortDateString()</td>
+      </tr>
+    }
+    </tbody>
+  </table>
+}
+else
+{
+  <p>No events created...</p>
+}

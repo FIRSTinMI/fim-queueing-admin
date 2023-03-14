@@ -1,0 +1,28 @@
+@model fim_queueing_admin.Services.CreateEventsModel
+@inject GlobalState State
+@{
+  ViewData["Title"] = "Create Events";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Create Events</h1>
+</div>
+
+<form asp-action="CreateEvents" method="post">
+  <div class="mb-3">
+    <label asp-for="Season">Season</label>
+    <input asp-for="Season" class="form-control" value="@State.CurrentSeason" />
+  </div>
+  <div class="mb-3">
+    <label asp-for="DistrictCode">District Code</label>
+    <input asp-for="DistrictCode" class="form-control" />
+  </div>
+  <div class="mb-3">
+    <label asp-for="EventCodes">Event Codes</label>
+    <textarea asp-for="EventCodes" class="form-control"></textarea>
+    <div class="form-text">Newline-separated.</div>
+  </div>
+  <div class="mb-3">
+    <input type="submit" class="btn btn-primary" value="Submit" />
+  </div>
+</form>

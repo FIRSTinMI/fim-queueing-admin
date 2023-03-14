@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using fim_queueing_admin;
 using fim_queueing_admin.Hubs;
 using Firebase.Database;
@@ -6,7 +7,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
+using fim_queueing_admin.Services;
+using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +55,26 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
     pol.AllowCredentials();
     pol.SetIsOriginAllowed(_ => true);
 }));
+
+var services = Assembly.GetExecutingAssembly().GetTypes()
+    .Where(mytype => mytype.GetInterfaces().Contains(typeof(IService)));
+
+foreach (var service in services)
+{
+    builder.Services.AddScoped(service);
+}
+
+if (string.IsNullOrWhiteSpace(builder.Configuration["FRCAPIToken"]))
+{
+    throw new ApplicationException("FRC API Token is required to start up");
+}
+builder.Services.AddHttpClient("FRC", client =>
+{
+    client.BaseAddress = new Uri("https://frc-api.firstinspires.org/v3.0/");
+    client.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(builder.Configuration["FRCAPIToken"])));
+});
 
 // Some stuff will hardly ever change, so just fetch it once at startup.
 // If I cared more this might be an expiring cache

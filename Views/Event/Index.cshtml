@@ -37,8 +37,8 @@
           <td>@evt.Object.name</td>
           <td>@(evt.Object.field.ToString() ?? "")</td>
           <td>@state</td>
-          <td>@(start?.ToShortDateString())</td>
-          <td>@(end?.ToShortDateString())</td>
+          <td>@(start?.DateTime.ToShortDateString())</td>
+          <td>@(end?.DateTime.ToShortDateString())</td>
           <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
         </tr>
       }
