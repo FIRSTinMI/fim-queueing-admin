@@ -146,6 +146,7 @@ public class CreateEventsService : IService
         // Get all the individually requested events
         foreach (var eventCode in eventCodes)
         {
+            if (string.IsNullOrWhiteSpace(eventCode)) continue;
             if (apiEvents.Any(x => x.code == eventCode))
             {
                 continue;

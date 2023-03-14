@@ -11,7 +11,7 @@
 @{
   var eventData = await Client.Child(
     $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<DbEvent>();
-  await using var stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("fim_queueing_admin.Assets.EventWelcome.md");
+  await using var stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("fim_queueing_admin.Assets.EventWelcome.html");
   if (stream == null) throw new NullReferenceException();
   using var welcomeText = new StreamReader(stream);
   var welcome = new StringBuilder(await welcomeText.ReadToEndAsync());
@@ -39,7 +39,7 @@
       <div class="accordion-collapse collapse" id="welcomeCollapse">
         <div class="accordion-body">
           <div>Field number: @(eventData.field != null ? eventData.field : "Unknown")</div>
-          <pre style="white-space: pre-wrap;" id="welcome">@welcome</pre>
+          <div id="welcome">@Html.Raw(welcome)</div>
         </div>
       </div>
     </div>
