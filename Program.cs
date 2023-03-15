@@ -1,4 +1,3 @@
-using System.Buffers.Text;
 using fim_queueing_admin;
 using fim_queueing_admin.Hubs;
 using Firebase.Database;
@@ -11,7 +10,6 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using fim_queueing_admin.Services;
-using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 

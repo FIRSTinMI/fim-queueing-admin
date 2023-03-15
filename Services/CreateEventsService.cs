@@ -120,7 +120,7 @@ public class CreateEventsService : IService
     private async Task<IEnumerable<ApiEventsResponse.ApiEvent>> GetEventsFromApi(CreateEventsModel model,
         CreateEventsResult result)
     {
-        var eventCodes = model.EventCodes.Split('\n').Select(x => x.Trim());
+        var eventCodes = model.EventCodes?.Split('\n').Select(x => x.Trim()) ?? Enumerable.Empty<string>();
         var apiEvents = new List<ApiEventsResponse.ApiEvent>();
 
         // Get all events for the district
@@ -197,7 +197,7 @@ public class CreateEventsModel
     /// <summary>
     /// Newline-separated list of FRC event codes. TBA support coming later.
     /// </summary>
-    public string EventCodes { get; set; } = "";
+    public string? EventCodes { get; set; }
 }
 
 public class CreateEventsResult
