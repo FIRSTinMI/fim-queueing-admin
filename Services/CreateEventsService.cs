@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using fim_queueing_admin.Models;
 using Firebase.Database;
@@ -20,6 +21,10 @@ public class CreateEventsService : IService
         _frcApiClient = httpClientFactory.CreateClient("FRC");
     }
     
+    private static readonly JsonSerializerOptions JsonOptions = new ()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
     private static readonly Random Random = new();
     private static string RandomEventKey(int length = 10)
     {
@@ -58,6 +63,7 @@ public class CreateEventsService : IService
             }
             catch (TimeZoneNotFoundException ex)
             {
+                _logger.LogWarning(ex, "Could not find time zone {Timezone}", apiEvent.timezone);
                 result.Errors.Add($"Failed to find time zone for {apiEvent.code}, falling back to local");
             }
 
@@ -91,7 +97,7 @@ public class CreateEventsService : IService
             try
             {
                 await _client.Child($"/seasons/{model.Season}/events/{eventKey}")
-                    .PutAsync(JsonSerializer.Serialize(dbEvent));
+                    .PutAsync(JsonSerializer.Serialize(dbEvent, JsonOptions));
 
                 result.CreatedEvents.Add(new CreateEventsResult.CreatedEvent()
                 {
