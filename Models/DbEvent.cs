@@ -13,5 +13,6 @@ public class DbEvent
     public string? streamEmbedLink { get; set; }
     public EventState? state { get; set; }
     public int? currentMatchNumber { get; set; }
+    public string? playoffMatchNumber { get; set; }
     public int? numQualMatches { get; set; }
 }

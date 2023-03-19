@@ -1,15 +1,17 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Text;
 using fim_queueing_admin;
 using fim_queueing_admin.Hubs;
+using fim_queueing_admin.Services;
 using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Reflection;
-using System.Text;
-using fim_queueing_admin.Services;
+using SlackNet;
+using TwitchLib.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +21,12 @@ async Task<string> GetAccessToken()
     var credential = accountCred.CreateScoped(
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/firebase.database");
-    
+
     return await (credential as ITokenAccess).GetAccessTokenForRequestAsync();
 }
 
 builder.Services.AddSingleton(_ => new FirebaseClient(builder.Configuration["Firebase:BaseUrl"],
-    new FirebaseOptions()
+    new FirebaseOptions
     {
         AuthTokenAsyncFactory = GetAccessToken,
         AsAccessToken = true
@@ -57,15 +59,10 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
 var services = Assembly.GetExecutingAssembly().GetTypes()
     .Where(mytype => mytype.GetInterfaces().Contains(typeof(IService)));
 
-foreach (var service in services)
-{
-    builder.Services.AddScoped(service);
-}
+foreach (var service in services) builder.Services.AddScoped(service);
 
 if (string.IsNullOrWhiteSpace(builder.Configuration["FRCAPIToken"]))
-{
     throw new ApplicationException("FRC API Token is required to start up");
-}
 builder.Services.AddHttpClient("FRC", client =>
 {
     client.BaseAddress = new Uri("https://frc-api.firstinspires.org/v3.0/");
@@ -73,6 +70,25 @@ builder.Services.AddHttpClient("FRC", client =>
         new AuthenticationHeaderValue("Basic",
             Convert.ToBase64String(Encoding.UTF8.GetBytes(builder.Configuration["FRCAPIToken"])));
 });
+
+if (!string.IsNullOrEmpty(builder.Configuration["Twitch:ClientId"]) &&
+    !string.IsNullOrEmpty(builder.Configuration["Twitch:ClientSecret"]))
+{
+    builder.Services.AddSingleton(_ => new TwitchAPI
+    {
+        Settings =
+        {
+            ClientId = builder.Configuration["Twitch:ClientId"],
+            Secret = builder.Configuration["Twitch:ClientSecret"]
+        }
+    });
+}
+
+if (!string.IsNullOrEmpty(builder.Configuration["Slack:Token"]))
+{
+    builder.Services.AddSingleton(_ =>
+        new SlackServiceBuilder().UseApiToken(builder.Configuration["Slack:Token"]).GetApiClient());
+}
 
 // Some stuff will hardly ever change, so just fetch it once at startup.
 // If I cared more this might be an expiring cache
@@ -89,14 +105,12 @@ builder.Services.AddSingleton<GlobalState>(provider =>
 });
 
 if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)
-{
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders =
             ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         options.KnownProxies.Add(IPAddress.Parse(builder.Configuration["ProxyIPAddress"]));
     });
-}
 
 var app = builder.Build();
 
@@ -109,13 +123,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 if (bool.TryParse(app.Configuration["EnableForwardedHeaders"], out var proxy) && proxy)
-{
     app.UseForwardedHeaders();
-}
 else
-{
     app.UseHttpsRedirection();
-}
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -127,7 +137,7 @@ app.UseCors();
 
 app.MapHub<DisplayHub>("/DisplayHub");
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    "default",
+    "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

@@ -27,10 +27,12 @@
         var start = evt.Object.start;
         var end = evt.Object.end;
         var state = evt.Object.state.ToString();
-        if (evt.Object.state == EventState.QualsInProgress)
-        {
-          state += $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})";
-        }
+        state += evt.Object.state switch {
+          EventState.QualsInProgress =>
+            $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})",
+          EventState.PlayoffsInProgress => $"({evt.Object.playoffMatchNumber ?? "?"})",
+          _ => ""
+        };
         <tr class="@(start < now && end > now ? "table-success" : "")">
           <td>@evt.Key</td>
           <td>@evt.Object.eventCode</td>
@@ -78,7 +80,7 @@
           await TableTemplate(orderedEvents.Where(IsActive));
         }
       }
-    
+
       <h2>Future and Past</h2>
       @{ await TableTemplate(orderedEvents.Where(x => !IsActive(x))); }
     </div>
