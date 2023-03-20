@@ -7,6 +7,7 @@ using fim_queueing_admin.Hubs;
 using fim_queueing_admin.Services;
 using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Diagnostics.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -103,6 +104,15 @@ builder.Services.AddSingleton<GlobalState>(provider =>
     using var version = new StreamReader(versionStream);
     return new GlobalState(season.Result, version.ReadToEnd());
 });
+
+if (!string.IsNullOrEmpty(builder.Configuration["Logging:GoogleProjectId"]))
+{
+    builder.Logging.AddGoogle(new LoggingServiceOptions()
+    {
+        ProjectId = builder.Configuration["Logging:GoogleProjectId"],
+        ServiceName = "fim-queueing-admin"
+    });
+}
 
 if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
