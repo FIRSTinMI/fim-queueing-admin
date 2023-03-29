@@ -107,7 +107,7 @@
                 EventState.PlayoffsInProgress => $"({evt.Object.playoffMatchNumber ?? "?"})",
                 _ => ""
                 };
-              var videos = new MatchVideosService.MatchVideosModel();
+              MatchVideosService.MatchVideosModel? videos = null;
               if (!string.IsNullOrEmpty(evt.Object.eventCode))
               {
                 eventVideoModels.TryGetValue(evt.Object.eventCode, out videos); 
@@ -119,9 +119,9 @@
                 <td>@(evt.Object.field.ToString() ?? "")</td>
                 <td>@state</td>
                 <td>
-                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/qualifications">Q(@(videos?.QualVideosAvailable.ToString() ?? "?")/@(videos?.QualMatchesTotal.ToString() ?? "?"))</a>
+                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/qualifications">Q(@(videos?.QualVideosAvailable?.ToString() ?? "?")/@(videos?.QualMatchesTotal?.ToString() ?? "?"))</a>
                   &nbsp;
-                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/playoffs">P(@(videos?.PlayoffVideosAvailable.ToString() ?? "?")/@(videos?.PlayoffVideosTotal.ToString() ?? "?"))</a>
+                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/playoffs">P(@(videos?.PlayoffVideosAvailable?.ToString() ?? "?")/@(videos?.PlayoffVideosTotal?.ToString() ?? "?"))</a>
                 </td>
                 <td>@(end?.DateTime.ToShortDateString())</td>
                 <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
