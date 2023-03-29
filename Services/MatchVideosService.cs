@@ -37,8 +37,10 @@ public class MatchVideosService : IService
 
             return new KeyValuePair<string, MatchVideosModel>(evt, outModel);
         }
-        
-        return null;
+        catch (Exception _)
+        {
+            return null;
+        }
     }
 
     public class MatchVideosModel
