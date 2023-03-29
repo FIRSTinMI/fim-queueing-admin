@@ -9,13 +9,13 @@ public class MatchVideosService : IService
         _frcClient = hcf.CreateClient("FRC");
     }
     
-    public async Task<Dictionary<string, MatchVideosModel>> GetVideosForEvents(string season, IEnumerable<string> events)
+    public async Task<Dictionary<string, MatchVideosModel?>> GetVideosForEvents(string season, IEnumerable<string> events)
     {
         var models = await Task.WhenAll(events.Select(x => GetVideosForEvent(season, x)));
-        return new Dictionary<string, MatchVideosModel>(models.Where(x => x is not null));
+        return new Dictionary<string, MatchVideosModel?>(models);
     }
 
-    private async Task<KeyValuePair<string, MatchVideosModel>?> GetVideosForEvent(string season, string evt)
+    private async Task<KeyValuePair<string, MatchVideosModel?>> GetVideosForEvent(string season, string evt)
     {
         try
         {
@@ -35,11 +35,11 @@ public class MatchVideosService : IService
                 })
             });
 
-            return new KeyValuePair<string, MatchVideosModel>(evt, outModel);
+            return new KeyValuePair<string, MatchVideosModel?>(evt, outModel);
         }
-        catch (Exception _)
+        catch (Exception)
         {
-            return null;
+            return new KeyValuePair<string, MatchVideosModel?>(evt, null);
         }
     }
 
