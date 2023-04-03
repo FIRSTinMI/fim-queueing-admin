@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Firebase.Database;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +43,24 @@ public class EventController : Controller
     {
         // NOTE: This is like really bad. I might even care if it wasn't restricted to admins only.
         await _client.Child($"/seasons/{_state.CurrentSeason}/events/{id}/streamEmbedLink").PutAsync($"\"{link}\"");
+        return RedirectToAction(nameof(Index));
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> UpdateDateTimes(string id, [FromForm] DateTime start, [FromForm] DateTime end, [FromForm] string offset)
+    {
+        var startDateTimeOffset = new DateTimeOffset(start, TimeSpan.Parse(offset));
+        var endDateTimeOffset = new DateTimeOffset(end, TimeSpan.Parse(offset));
+
+        await _client.Child($"/seasons/{_state.CurrentSeason}/events/{id}")
+            .PatchAsync(JsonSerializer.Serialize(new
+            {
+                startMs = startDateTimeOffset.ToUnixTimeMilliseconds(),
+                endMs = endDateTimeOffset.ToUnixTimeMilliseconds(),
+                start = startDateTimeOffset,
+                end = endDateTimeOffset,
+            }));
+        
         return RedirectToAction(nameof(Index));
     }
 }
