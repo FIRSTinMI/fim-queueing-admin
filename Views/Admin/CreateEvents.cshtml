@@ -10,9 +10,12 @@
 
 <form asp-action="CreateEvents" method="post">
   <div class="mb-3">
-      <label asp-for="DataSource">Data Source</label>
-      <input asp-for="DataSource" class="form-control" value="frcEvents" />
-    </div>
+    <label asp-for="DataSource">Data Source</label>
+    <select asp-for="DataSource" class="form-control">
+      <option value="frcEvents" selected>FRC.events</option>
+      <option value="blueAlliance">Blue Alliance</option>
+    </select>
+  </div>
   <div class="mb-3">
     <label asp-for="Season">Season</label>
     <input asp-for="Season" class="form-control" value="@State.CurrentSeason"/>
