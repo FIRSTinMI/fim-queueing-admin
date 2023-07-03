@@ -317,7 +317,7 @@ public class BlueAllianceApiEventsResponse : IEventResponse
     }
     public IEnumerable<Webcast> webcasts { get; set; }
     public string timezone { get; set; }
-    public string code { get; set; }
+    public string key { get; set; }
     public string name { get; set; }
     public DateTime start_date { get; set; }
     public DateTime end_date { get; set; }
@@ -332,7 +332,7 @@ public class BlueAllianceApiEventsResponse : IEventResponse
 
         return new EventInfo
         {
-            EventCode = code,
+            EventCode = key,
             Name = name,
             StartDate = start_date.Date,
             EndDate = end_date.Date.AddDays(1).AddSeconds(-1),
