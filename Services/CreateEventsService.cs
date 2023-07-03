@@ -10,15 +10,14 @@ namespace fim_queueing_admin.Services;
 public class CreateEventsService : IService
 {
     private readonly FirebaseClient _client;
-    private readonly HttpClient _frcApiClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CreateEventsService> _logger;
-    private static readonly Regex TwitchChannelRegex = new Regex(@"$https:\/\/twitch\.tv/([\w\d]+)");
 
     public CreateEventsService(FirebaseClient client, IHttpClientFactory httpClientFactory, ILogger<CreateEventsService> logger)
     {
         _client = client;
         _logger = logger;
-        _frcApiClient = httpClientFactory.CreateClient("FRC");
+        _httpClientFactory = httpClientFactory;
     }
     
     private static readonly JsonSerializerOptions JsonOptions = new ()
@@ -50,28 +49,28 @@ public class CreateEventsService : IService
 
         foreach (var apiEvent in apiEvents)
         {
-            if (existingEventCodes.Contains(apiEvent.code))
+            if (existingEventCodes.Contains(apiEvent.EventCode))
             {
-                result.Errors.Add($"Skipping duplicate event code {apiEvent.code}");
+                result.Errors.Add($"Skipping duplicate event code {apiEvent.EventCode}");
                 continue;
             }
 
             var timeZoneInfo = TimeZoneInfo.Local;
             try
             {
-                timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(apiEvent.timezone);
+                timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(apiEvent.Timezone);
             }
             catch (TimeZoneNotFoundException ex)
             {
-                _logger.LogWarning(ex, "Could not find time zone {Timezone}", apiEvent.timezone);
-                result.Errors.Add($"Failed to find time zone for {apiEvent.code}, falling back to local");
+                _logger.LogWarning(ex, "Could not find time zone {Timezone}", apiEvent.Timezone);
+                result.Errors.Add($"Failed to find time zone for {apiEvent.EventCode}, falling back to local");
             }
 
             string? streamEmbedLink = null;
-            if (apiEvent.webcasts.Count() == 1 && TwitchChannelRegex.IsMatch(apiEvent.webcasts.First()))
+            if (!string.IsNullOrEmpty(apiEvent.TwitchChannel))
             {
                 streamEmbedLink =
-                    $"https://player.twitch.tv/?channel={TwitchChannelRegex.Matches(apiEvent.webcasts.First())}&parent=fim-queueing.web.app&autoplay=true&muted=false";
+                    $"https://player.twitch.tv/?channel={apiEvent.TwitchChannel}&parent=%HOST%&autoplay=true&muted=false";
             }
 
             string eventKey;
@@ -80,18 +79,19 @@ public class CreateEventsService : IService
                 eventKey = RandomEventKey();
             } while (existingEventKeys.Contains(eventKey));
 
-            var utcStart = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.dateStart, timeZoneInfo);
-            var utcEnd = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.dateEnd, timeZoneInfo);
+            var utcStart = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.StartDate, timeZoneInfo);
+            var utcEnd = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.EndDate, timeZoneInfo);
             var dbEvent = new DbEvent()
             {
-                eventCode = apiEvent.code,
+                eventCode = apiEvent.EventCode,
                 startMs = utcStart.ToUnixTimeMilliseconds(),
                 endMs = utcEnd.ToUnixTimeMilliseconds(),
-                start = new DateTimeOffset(apiEvent.dateStart, timeZoneInfo.GetUtcOffset(apiEvent.dateStart)),
-                end = new DateTimeOffset(apiEvent.dateEnd, timeZoneInfo.GetUtcOffset(apiEvent.dateEnd)),
+                start = new DateTimeOffset(apiEvent.StartDate, timeZoneInfo.GetUtcOffset(apiEvent.StartDate)),
+                end = new DateTimeOffset(apiEvent.EndDate, timeZoneInfo.GetUtcOffset(apiEvent.EndDate)),
                 state = EventState.Pending,
-                name = apiEvent.name,
-                streamEmbedLink = streamEmbedLink
+                name = apiEvent.Name,
+                streamEmbedLink = streamEmbedLink,
+                dataSource = model.DataSource
             };
 
             try
@@ -117,17 +117,23 @@ public class CreateEventsService : IService
         return result;
     }
 
-    private async Task<IEnumerable<ApiEventsResponse.ApiEvent>> GetEventsFromApi(CreateEventsModel model,
+    private async Task<IEnumerable<EventInfo>> GetEventsFromApi(CreateEventsModel model,
         CreateEventsResult result)
     {
+        var httpClient = model.DataSource switch
+        {
+            "frcEvents" => _httpClientFactory.CreateClient("FRC"),
+            "blueAlliance" => _httpClientFactory.CreateClient("TBA"),
+            _ => throw new ApplicationException("Unknown data source")
+        };
         var eventCodes = model.EventCodes?.Split('\n').Select(x => x.Trim()) ?? Enumerable.Empty<string>();
-        var apiEvents = new List<ApiEventsResponse.ApiEvent>();
+        var apiEvents = new List<EventInfo>();
 
         // Get all events for the district
-        if (!string.IsNullOrWhiteSpace(model.DistrictCode))
+        if (model.DataSource == "frcEvents" && !string.IsNullOrWhiteSpace(model.DistrictCode))
         {
             var districtEvents =
-                await _frcApiClient.GetAsync($"{model.Season}/events?districtCode={model.DistrictCode}");
+                await httpClient.GetAsync($"{model.Season}/events?districtCode={model.DistrictCode}");
             if (!districtEvents.IsSuccessStatusCode)
             {
                 result.Errors.Add("Failed to fetch events for the district");
@@ -137,14 +143,14 @@ public class CreateEventsService : IService
                 await using var contentStream =
                     await districtEvents.Content.ReadAsStreamAsync();
                 var deserializedEvents =
-                    (await JsonSerializer.DeserializeAsync<ApiEventsResponse>(contentStream))?.Events.ToList();
+                    (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream))?.Events.ToList();
                 if (deserializedEvents is null || !deserializedEvents.Any())
                 {
                     result.Errors.Add("No events were returned for that district code");
                 }
                 else
                 {
-                    apiEvents.AddRange(deserializedEvents);   
+                    apiEvents.AddRange(deserializedEvents.Select(e => e.ToEventInfo()));   
                 }
             }
         }
@@ -153,7 +159,7 @@ public class CreateEventsService : IService
         foreach (var eventCode in eventCodes)
         {
             if (string.IsNullOrWhiteSpace(eventCode)) continue;
-            if (apiEvents.Any(x => x.code == eventCode))
+            if (apiEvents.Any(x => x.EventCode == eventCode))
             {
                 continue;
             }
@@ -163,23 +169,57 @@ public class CreateEventsService : IService
                 result.Errors.Add($"Bad event code {eventCode}");
                 continue;
             }
-            var apiEvent = await _frcApiClient.GetAsync($"{model.Season}/events?eventCode={eventCode}");
-            if (!apiEvent.IsSuccessStatusCode)
+
+            if (model.DataSource == "frcEvents")
             {
-                result.Errors.Add($"Failed to fetch events for event code {eventCode}");
-                continue;
+                var eventResp = await httpClient.GetAsync($"{model.Season}/events?eventCode={eventCode}");
+                if (!eventResp.IsSuccessStatusCode)
+                {
+                    result.Errors.Add($"Failed to fetch events for the event code {eventCode}");
+                }
+                else
+                {
+                    await using var contentStream =
+                        await eventResp.Content.ReadAsStreamAsync();
+                    var deserializedEvents =
+                        (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream))?.Events.ToList();
+                    if (deserializedEvents is null || deserializedEvents.Count != 1)
+                    {
+                        result.Errors.Add($"No events were returned for event code {eventCode}");
+                    }
+                    else
+                    {
+                        apiEvents.AddRange(deserializedEvents.Select(e => e.ToEventInfo()));   
+                    }
+                }
             }
-            await using var contentStream =
-                await apiEvent.Content.ReadAsStreamAsync();
-            var deserializedEvents =
-                (await JsonSerializer.DeserializeAsync<ApiEventsResponse>(contentStream))?.Events.ToList();
-            if (deserializedEvents is null || deserializedEvents.Count != 1)
+            else if (model.DataSource == "blueAlliance")
             {
-                result.Errors.Add($"No events were returned for event code {eventCode}");
-                continue;
+                var eventResp = await httpClient.GetAsync($"event/{eventCode}");
+                if (!eventResp.IsSuccessStatusCode)
+                {
+                    result.Errors.Add($"Failed to fetch events for the event code {eventCode}");
+                }
+                else
+                {
+                    await using var contentStream =
+                        await eventResp.Content.ReadAsStreamAsync();
+                    var deserializedEvents = 
+                        await JsonSerializer.DeserializeAsync<BlueAllianceApiEventsResponse?>(contentStream);
+                    if (deserializedEvents is null)
+                    {
+                        result.Errors.Add($"No events were returned for event code {eventCode}");
+                    }
+                    else
+                    {
+                        apiEvents.Add(deserializedEvents.ToEventInfo());   
+                    }
+                }
             }
-            apiEvents.AddRange(deserializedEvents);
-            
+            else
+            {
+                throw new ApplicationException("Unknown data source");
+            }
         }
 
         return apiEvents;
@@ -188,14 +228,15 @@ public class CreateEventsService : IService
 
 public class CreateEventsModel
 {
+    public string DataSource { get; set; } = "frcEvents";
     public int? Season { get; set; }
     /// <summary>
-    /// Add all events in the given district
+    /// Add all events in the given district. Only supported with `frcEvents`.
     /// </summary>
     public string? DistrictCode { get; set; }
 
     /// <summary>
-    /// Newline-separated list of FRC event codes. TBA support coming later.
+    /// Newline-separated list of event codes.
     /// </summary>
     public string? EventCodes { get; set; }
 }
@@ -214,19 +255,90 @@ public class CreateEventsResult
     public List<CreatedEvent> CreatedEvents { get; set; } = new();
 }
 
+public class EventInfo
+{
+    public string EventCode { get; set; }
+    public string Name { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public string Timezone { get; set; }
+    public string? TwitchChannel { get; set; }
+}
+
+public interface IEventResponse
+{
+    public EventInfo ToEventInfo();
+}
+
 #pragma warning disable CS8618
-public class ApiEventsResponse
+public class FrcEventsApiEventsResponse
 {
     public IEnumerable<ApiEvent> Events { get; set; }
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public class ApiEvent
+    public class ApiEvent : IEventResponse
     {
+        private static readonly Regex TwitchChannelRegex = new Regex(@"$https:\/\/twitch\.tv/([\w\d]+)");
+        
         public IEnumerable<string> webcasts { get; set; }
         public string timezone { get; set; }
         public string code { get; set; }
         public string name { get; set; }
         public DateTime dateStart { get; set; }
         public DateTime dateEnd { get; set; }
+
+        public EventInfo ToEventInfo()
+        {
+            string? twitchChannel = null;
+            if (webcasts.Count() == 1 && TwitchChannelRegex.IsMatch(webcasts.First()))
+            {
+                twitchChannel = TwitchChannelRegex.Matches(webcasts.First())[1].Value;
+            }
+
+            return new EventInfo
+            {
+                EventCode = code,
+                Name = name,
+                StartDate = dateStart,
+                EndDate = dateEnd,
+                Timezone = timezone,
+                TwitchChannel = twitchChannel
+            };
+        }
+    }
+}
+
+[SuppressMessage("ReSharper", "InconsistentNaming")]
+public class BlueAllianceApiEventsResponse : IEventResponse
+{
+    public class Webcast
+    {
+        public string channel { get; set; }
+        public string type { get; set; }
+    }
+    public IEnumerable<Webcast> webcasts { get; set; }
+    public string timezone { get; set; }
+    public string code { get; set; }
+    public string name { get; set; }
+    public DateTime start_date { get; set; }
+    public DateTime end_date { get; set; }
+
+    public EventInfo ToEventInfo()
+    {
+        string? twitchChannel = null;
+        if (webcasts.Count() == 1 && webcasts.First().type == "twitch")
+        {
+            twitchChannel = webcasts.First().channel;
+        }
+
+        return new EventInfo
+        {
+            EventCode = code,
+            Name = name,
+            StartDate = start_date.Date,
+            EndDate = end_date.Date.AddDays(1).AddSeconds(-1),
+            Timezone = timezone,
+            TwitchChannel = twitchChannel
+        };
     }
 }
 #pragma warning restore CS8618

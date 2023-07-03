@@ -71,6 +71,11 @@ builder.Services.AddHttpClient("FRC", client =>
         new AuthenticationHeaderValue("Basic",
             Convert.ToBase64String(Encoding.UTF8.GetBytes(builder.Configuration["FRCAPIToken"])));
 });
+builder.Services.AddHttpClient("TBA", client =>
+{
+    client.BaseAddress = new Uri("https://www.thebluealliance.com/api/v3/");
+    client.DefaultRequestHeaders.Add("X-TBA-Auth-Key", builder.Configuration["TBAAPIToken"]);
+});
 
 if (!string.IsNullOrEmpty(builder.Configuration["Twitch:ClientId"]) &&
     !string.IsNullOrEmpty(builder.Configuration["Twitch:ClientSecret"]))
