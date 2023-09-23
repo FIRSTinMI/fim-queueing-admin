@@ -6,6 +6,8 @@ using fim_queueing_admin;
 using fim_queueing_admin.Hubs;
 using fim_queueing_admin.Services;
 using Firebase.Database;
+using FirebaseAdmin;
+using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Diagnostics.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,15 +18,21 @@ using TwitchLib.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var accountCred = await GoogleCredential.GetApplicationDefaultAsync();
+var credential = accountCred.CreateScoped(
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/firebase.database");
+
 async Task<string> GetAccessToken()
 {
-    var accountCred = await GoogleCredential.GetApplicationDefaultAsync();
-    var credential = accountCred.CreateScoped(
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/firebase.database");
-
     return await (credential as ITokenAccess).GetAccessTokenForRequestAsync();
 }
+
+FirebaseApp.Create(new AppOptions()
+{
+    ProjectId = builder.Configuration["Firebase:ProjectId"] ?? "fim-queueing",
+    Credential = credential
+});
 
 builder.Services.AddSingleton(_ => new FirebaseClient(builder.Configuration["Firebase:BaseUrl"],
     new FirebaseOptions
@@ -32,6 +40,8 @@ builder.Services.AddSingleton(_ => new FirebaseClient(builder.Configuration["Fir
         AuthTokenAsyncFactory = GetAccessToken,
         AsAccessToken = true
     }));
+
+builder.Services.AddSingleton<FirebaseAuth>(_ => FirebaseAuth.DefaultInstance);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(opt =>

@@ -1,0 +1,47 @@
+﻿@using FirebaseAdmin.Auth
+@inject FirebaseAuth Auth
+@{
+  ViewData["Title"] = "Users";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Users</h1>
+  </div>
+  @{
+    var users = await Auth.ListUsersAsync(new ListUsersOptions
+    {
+      PageSize = 1000
+    }).ReadPageAsync(1000);
+  }
+  @if (!users.Any())
+  {
+    <p>No users were found. Have someone log in to fim-queueing...</p>
+  }
+  else
+  {
+    <div>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Uid</th>
+          <th>Email</th>
+          <th>Admin?</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in users)
+        {
+          <tr>
+            <td>@user.Uid</td>
+            <td>@user.Email</td>
+            <td>@(user.CustomClaims.ContainsKey("admin") && (bool)user.CustomClaims["admin"] ? "Yes" : "No")</td>
+            <td><a asp-action="Manage" asp-route-uid="@user.Uid">Manage</a></td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

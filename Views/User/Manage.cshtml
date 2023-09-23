@@ -1,0 +1,43 @@
+﻿@using FirebaseAdmin.Auth
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using fim_queueing_admin.Controllers
+@model fim_queueing_admin.Controllers.UserController.UserManageModel
+@inject FirebaseAuth Auth
+@{
+  ViewData["Title"] = "Manage User";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Manage User</h1>
+  </div>
+  @{
+    var user = await Auth.GetUserAsync((string)ViewData["uid"]!);
+    ViewData.Model = new UserController.UserManageModel()
+    {
+      IsAdmin = user.CustomClaims.ContainsKey("admin")
+                && bool.TryParse(user.CustomClaims["admin"].ToString(), out var isAdmin)
+                && isAdmin
+    };
+  }
+
+  <h2>Information</h2>
+  <dl>
+    <dt>UID</dt>
+    <dd>@user.Uid</dd>
+    <dt>Email</dt>
+    <dd>@user.Email</dd>
+    <dt>Display Name</dt>
+    <dd>@user.DisplayName</dd>
+    <dt>Disabled?</dt>
+    <dd>@(user.Disabled ? "Yes" : "No")</dd>
+  </dl>
+  <h2>Permissions</h2>
+  <form asp-action="Manage" method="post">
+    <div class="form-check">
+      <input type="checkbox" class="form-check-input" asp-for="IsAdmin">
+      <label class="form-check-label" asp-for="IsAdmin">Global Admin?</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Save</button>
+  </form>
+</div>
