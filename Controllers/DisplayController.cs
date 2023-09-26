@@ -9,10 +9,12 @@ namespace fim_queueing_admin.Controllers;
 public class DisplayController : Controller
 {
     private readonly IHubContext<DisplayHub> _hubCtx;
+    private readonly DisplayHubManager _manager;
     
-    public DisplayController(IHubContext<DisplayHub> hubCtx)
+    public DisplayController(IHubContext<DisplayHub> hubCtx, DisplayHubManager manager)
     {
         _hubCtx = hubCtx;
+        _manager = manager;
     }
 
     [HttpGet]
@@ -24,6 +26,11 @@ public class DisplayController : Controller
     [HttpGet]
     public IActionResult Manage(string id)
     {
+        if (!_manager.GetConnections().ContainsKey(id))
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return View("NotFound");
+        }
         ViewBag.id = id;
         return View();
     }
