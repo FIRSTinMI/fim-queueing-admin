@@ -1,0 +1,59 @@
+@using fim_queueing_admin.Data
+@using Humanizer
+@using Microsoft.EntityFrameworkCore
+@inject FimDbContext DbContext
+@{
+  ViewData["Title"] = "Carts";
+}
+@functions
+{
+  string GetHumanizedLastSeen(DateTime? dt)
+  {
+    if (dt is null) return "Never";
+    if (dt == DateTime.MaxValue) return "Now";
+    return dt.Humanize();
+  }
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Carts</h1>
+  </div>
+  @{
+    var carts = await DbContext.Carts.OrderBy(c => c.Name).Select(c => new
+    {
+      c.Id,
+      c.Name,
+      c.LastSeen
+    }).ToListAsync();
+  }
+  <div><a asp-action="Manage">Create Cart</a></div>
+  @if (!carts.Any())
+  {
+    <p>No carts were found, but you can create one!</p>
+  }
+  else
+  {
+    <div>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Last Seen</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var cart in carts)
+        {
+          <tr>
+            <td>@cart.Name</td>
+            <td>@GetHumanizedLastSeen(cart.LastSeen)</td>
+            <td><a asp-action="Manage" asp-route-id="@cart.Id">Manage</a></td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

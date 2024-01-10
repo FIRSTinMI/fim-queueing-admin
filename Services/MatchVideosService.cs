@@ -15,7 +15,7 @@ public class MatchVideosService : IService
         return new Dictionary<string, MatchVideosModel?>(models);
     }
 
-    private async Task<KeyValuePair<string, MatchVideosModel?>> GetVideosForEvent(string season, string evt)
+    public async Task<KeyValuePair<string, MatchVideosModel?>> GetVideosForEvent(string season, string evt)
     {
         try
         {

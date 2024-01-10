@@ -1,0 +1,68 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using fim_queueing_admin.Data
+@using fim_queueing_admin.Controllers
+@model fim_queueing_admin.Controllers.CartController.CartManageModel
+@inject FimDbContext DbContext
+@{
+  ViewData["Title"] = "Manage Cart";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Manage Cart</h1>
+  </div>
+  @{
+    Cart? cart = null;
+    if (ViewData["id"] is not null)
+    {
+      cart = await DbContext.Carts.FindAsync((Guid)ViewData["id"]!);
+      if (cart is not null)
+      {
+        ViewData.Model = new CartController.CartManageModel
+        {
+          Name = cart.Name
+        };
+      }
+    }
+  }
+  
+  <h2>Information</h2>
+  <form asp-action="Manage" method="post">
+      <div class="form-group mb-2">
+        <label asp-for="Name">Name</label>
+        <input asp-for="Name" class="form-control" type="text" />
+      </div>
+      <button class="btn btn-primary" type="submit">Save</button>
+  </form>
+
+  @if (cart is not null)
+  {
+    <h2>Auth Information</h2>
+    <dl>
+      <dt>Auth Token <button class="btn btn-link" onclick="toggleAuthToken(this)">Show</button></dt>
+      <dd>
+        <input id="authToken" type="password" readonly value="@cart.AuthToken" />
+      </dd>
+    </dl>
+  }
+  
+  <style>
+    #authToken {
+      all: unset;
+      width: 100%;
+    }
+  </style>
+  
+  <script>
+    function toggleAuthToken(el) {
+      const inputElement = document.getElementById("authToken");
+      if (inputElement.type === "password") {
+        inputElement.type = "text";
+        el.innerText = "Hide";
+      } else {
+        inputElement.type = "password";
+        el.innerText = "Show";
+      }
+    }
+  </script>
+</div>

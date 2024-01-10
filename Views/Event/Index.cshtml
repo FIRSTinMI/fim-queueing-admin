@@ -2,7 +2,7 @@
 @using fim_queueing_admin.Services
 @inject FirebaseClient Client
 @inject GlobalState State
-@inject MatchVideosService MatchVideosService
+@* @inject MatchVideosService MatchVideosService *@
 @{
   ViewData["Title"] = "Events";
 
@@ -59,9 +59,9 @@
   </div>
   @{
     var events = await Client.Child($"/seasons/{State.CurrentSeason}/events")
-     .OnceAsync<DbEvent>();
-   var orderedEvents = events.OrderBy(x => x.Object.start)
-     .ThenBy(x => x.Object.field).ToList();
+      .OnceAsync<DbEvent>();
+    var orderedEvents = events.OrderBy(x => x.Object.start)
+      .ThenBy(x => x.Object.field).ToList();
   }
   @if (!events.Any())
   {
@@ -79,9 +79,9 @@
         }
         else
         {
-          var eventVideoModels = await MatchVideosService.GetVideosForEvents(State.CurrentSeason, 
-            (IEnumerable<string>)currentEvents.Select(x => x.Object.eventCode)
-              .Where(x => !string.IsNullOrEmpty(x)));
+          // var eventVideoModels = await MatchVideosService.GetVideosForEvents(State.CurrentSeason, 
+          //   (IEnumerable<string>)currentEvents.Select(x => x.Object.eventCode)
+          //     .Where(x => !string.IsNullOrEmpty(x)));
           <table class="table">
             <thead>
             <tr>
@@ -106,12 +106,12 @@
                   $" ({evt.Object.currentMatchNumber.ToString() ?? "?"}/{evt.Object.numQualMatches.ToString() ?? "?"})",
                 EventState.PlayoffsInProgress => $"({evt.Object.playoffMatchNumber ?? "?"})",
                 _ => ""
-                };
-              MatchVideosService.MatchVideosModel? videos = null;
-              if (!string.IsNullOrEmpty(evt.Object.eventCode))
-              {
-                eventVideoModels.TryGetValue(evt.Object.eventCode, out videos); 
-              }
+              };
+              // MatchVideosService.MatchVideosModel? videos = null;
+              // if (!string.IsNullOrEmpty(evt.Object.eventCode))
+              // {
+              //   eventVideoModels.TryGetValue(evt.Object.eventCode, out videos); 
+              // }
               <tr class="@(start < now && end > now ? "table-success" : "")">
                 <td>@evt.Key</td>
                 <td>@evt.Object.eventCode</td>
@@ -119,9 +119,7 @@
                 <td>@(evt.Object.field.ToString() ?? "")</td>
                 <td>@state</td>
                 <td>
-                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/qualifications">Q(@(videos?.QualVideosAvailable?.ToString() ?? "?")/@(videos?.QualMatchesTotal?.ToString() ?? "?"))</a>
-                  &nbsp;
-                  <a href="https://frc-events.firstinspires.org/@State.CurrentSeason/@evt.Object.eventCode/playoffs">P(@(videos?.PlayoffVideosAvailable?.ToString() ?? "?")/@(videos?.PlayoffVideosTotal?.ToString() ?? "?"))</a>
+                  <span class="video-status" data-event-code="@evt.Object.eventCode">Loading...</span>
                 </td>
                 <td>@(end?.DateTime.ToShortDateString())</td>
                 <td><a asp-action="Manage" asp-route-id="@evt.Key">Manage</a></td>
@@ -137,3 +135,14 @@
     </div>
   }
 </div>
+
+@section Scripts
+{
+  <script>
+    document.querySelectorAll(".video-status").forEach(async el => {
+      fetch("/Event/GetEventVideoStatus/" + el.dataset.eventCode).then(async resp => {
+        el.innerHTML = await resp.text();
+      });
+    });
+  </script>
+}

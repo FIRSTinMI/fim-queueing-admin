@@ -6,6 +6,7 @@ public class DbEvent
     public string? name { get; set; }
     public string? eventCode { get; set; }
     public int? field { get; set; }
+    public Guid cartId { get; set; }
     public DateTimeOffset? start { get; set; }
     public DateTimeOffset? end { get; set; }
     public long? startMs { get; set; }

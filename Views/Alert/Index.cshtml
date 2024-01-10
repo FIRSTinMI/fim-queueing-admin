@@ -1,0 +1,50 @@
+@using fim_queueing_admin.Data
+@using Humanizer
+@using Microsoft.EntityFrameworkCore
+@inject FimDbContext DbContext
+@{
+  ViewData["Title"] = "Alerts";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Alerts</h1>
+  </div>
+  <div><a asp-action="Manage">Create Alert</a></div>
+  @{
+    var alerts = await DbContext.Alerts.OrderByDescending(c => c.CreatedAt).Select(a => new
+    {
+      a.Id,
+      Content = a.Content.Substring(0, 50),
+      a.CreatedAt
+    }).ToListAsync();
+  }
+  @if (!alerts.Any())
+  {
+    <p>No alerts were found, but you can create one!</p>
+  }
+  else
+  {
+    <div>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Content</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var alert in alerts)
+        {
+          <tr>
+            <td>@alert.Content</td>
+            <td><span title="@alert.CreatedAt.ToString("o")">@alert.CreatedAt.Humanize()</span></td>
+            <td><a asp-action="Manage" asp-route-id="@alert.Id">Manage</a></td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

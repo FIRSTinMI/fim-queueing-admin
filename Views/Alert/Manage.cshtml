@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using fim_queueing_admin.Data
+@using fim_queueing_admin.Controllers
+@using Microsoft.EntityFrameworkCore
+@model fim_queueing_admin.Controllers.AlertController.AlertManageModel
+@inject FimDbContext DbContext
+@{
+  ViewData["Title"] = "Manage Alert";
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">Manage Alert</h1>
+  </div>
+  @{
+    Alert? alert = null;
+    if (ViewData["id"] is not null)
+    {
+      alert = await DbContext.Alerts.Include(a => a.AlertCarts).SingleOrDefaultAsync(a => a.Id == (Guid)ViewData["id"]!);
+      if (alert is not null)
+      {
+        ViewData.Model = new AlertController.AlertManageModel
+        {
+          Content = alert.Content,
+          SelectedCartIds = alert.AlertCarts!.Select(ac => ac.CartId).ToList()
+        };
+      }
+    }
+
+    var allCarts = await DbContext.Carts.Select(c => new
+    {
+      c.Id,
+      c.Name
+    }).ToListAsync();
+  }
+  
+  <form asp-action="Manage" method="post" id="manage-form" onsubmit="updateContentField()">
+    <div class="form-group mb-2">
+      <label asp-for="Content">Content</label>
+      <input asp-for="Content" class="form-control" type="hidden" />
+      <div id="content-editor">
+        @Html.Raw(alert?.Content)
+      </div>
+    </div>
+    
+    <h2>Carts</h2>
+      <table class="table">
+        <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Read</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var cart in allCarts)
+        {
+          <tr>
+            <td><input type="checkbox" name="SelectedCartIds" value="@cart.Id" checked="@Model.SelectedCartIds.Contains(cart.Id)"/></td>
+            <td>@cart.Name</td>
+            <td>@(alert?.AlertCarts?.SingleOrDefault(c => c.CartId == cart.Id)?.ReadTime?.ToString() ?? "Unread")</td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    
+    <button class="btn btn-primary" type="submit">Save</button>
+  </form>
+</div>
+
+@section Styles
+{
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+}
+
+@section Scripts
+{
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+  <!-- Initialize Quill editor -->
+  <script>
+    var quill = new Quill('#content-editor', {
+      theme: 'snow'
+    });
+    
+    function updateContentField() {
+      document.getElementById("@Html.IdFor(m => m.Content)").value = quill.root.innerHTML;
+      document.getElementById("manage-form").submit();
+    }
+  </script>
+}

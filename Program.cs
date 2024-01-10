@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using fim_queueing_admin;
+using fim_queueing_admin.Auth;
+using fim_queueing_admin.Data;
 using fim_queueing_admin.Hubs;
 using fim_queueing_admin.Services;
 using Firebase.Database;
@@ -13,6 +15,7 @@ using Google.Cloud.Diagnostics.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using SlackNet;
 using TwitchLib.Api;
 
@@ -28,7 +31,7 @@ async Task<string> GetAccessToken()
     return await (credential as ITokenAccess).GetAccessTokenForRequestAsync();
 }
 
-FirebaseApp.Create(new AppOptions()
+FirebaseApp.Create(new AppOptions
 {
     ProjectId = builder.Configuration["Firebase:ProjectId"] ?? "fim-queueing",
     Credential = credential
@@ -41,6 +44,12 @@ builder.Services.AddSingleton(_ => new FirebaseClient(builder.Configuration["Fir
         AsAccessToken = true
     }));
 
+builder.Services.AddDbContext<FimDbContext>(opt =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("Default");
+    opt.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+});
+
 builder.Services.AddSingleton<FirebaseAuth>(_ => FirebaseAuth.DefaultInstance);
 
 builder.Services.AddControllersWithViews();
@@ -49,11 +58,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     opt.LoginPath = "/Home/Login";
     opt.SlidingExpiration = true;
     opt.ExpireTimeSpan = TimeSpan.FromDays(31);
-});
+}).AddScheme<AuthTokenAuthSchemeOptions, AuthTokenAuthSchemeHandler>(AuthTokenScheme.AuthenticationScheme, _ => { });
+
+var isBehindProxy = bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var res) && res;
+
 builder.Services.AddAuthorization(opt =>
 {
     opt.DefaultPolicy = new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser().Build();
+
+    var authTokenPolicy =
+        new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireAuthenticatedUser().Build();
+    opt.AddPolicy(AuthTokenScheme.AuthenticationScheme, authTokenPolicy);
 });
 
 builder.Services.AddSingleton<DisplayHubManager>();
@@ -137,6 +153,8 @@ if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var build
         options.KnownProxies.Add(IPAddress.Parse(builder.Configuration["ProxyIPAddress"]));
     });
 
+builder.Services.AddHostedService<DatabaseKeepAliveService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -146,6 +164,8 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseCors();
 
 if (bool.TryParse(app.Configuration["EnableForwardedHeaders"], out var proxy) && proxy)
     app.UseForwardedHeaders();
@@ -158,9 +178,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseCors();
-
 app.MapHub<DisplayHub>("/DisplayHub");
+app.MapHub<AssistantHub>("/AssistantHub");
 app.MapControllerRoute(
     "default",
     "{controller=Home}/{action=Index}/{id?}");

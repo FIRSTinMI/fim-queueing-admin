@@ -58,7 +58,7 @@
             var eventStateList = Enum.GetNames<EventState>().Select(n => 
               new SelectListItem(n, n, currentState == n));
           }
-          <select id="state" name="state" class="form-control" asp-items="eventStateList"></select>
+          <select id="eventState" name="eventState" class="form-control" asp-items="eventStateList"></select>
         </div>
         <button class="btn btn-primary">Update</button>
       </form>
@@ -102,15 +102,24 @@
       </form>
     </div>
   </div>
-  @* <div class="text-center"> *@
-  @*   <form method="post" asp-action="SendRefresh" asp-route-id="@((string)ViewBag.id)" class="d-inline-block"> *@
-  @*     <button class="btn btn-primary">Force Refresh</button> *@
-  @*   </form> *@
-  @*   <form method="post" asp-action="Identify" asp-route-id="@((string)ViewBag.id)" class="d-inline-block"> *@
-  @*     <button class="btn btn-primary">Identify</button> *@
-  @*   </form> *@
-  @* </div> *@
   
+  <div class="card mt-3">
+    <h5 class="card-header">Manage Admins</h5>
+    <div class="card-body">
+      <div class="form-group mb-2">
+        <label for="link">Start</label>
+        <input id="start" name="start" class="form-control" value="@eventData.start!.Value.ToString("s")" type="datetime-local"/>
+      </div>
+      <div class="form-group mb-2">
+        <label for="link">End</label>
+        <input id="end" name="end" class="form-control" value="@eventData.end!.Value.ToString("s")" type="datetime-local"/>
+      </div>
+      <div class="form-group mb-2">
+        <label for="link">Timezone Offset</label>
+        <input id="offset" name="offset" class="form-control" value="@eventData.start!.Value.Offset" type="text"/>
+      </div>
+    </div>
+  </div>
 </div>
 
 @section Scripts
