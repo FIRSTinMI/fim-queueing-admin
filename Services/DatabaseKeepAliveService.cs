@@ -12,10 +12,17 @@ public class DatabaseKeepAliveService(ILogger<DatabaseKeepAliveService> logger, 
 {
     private readonly PeriodicTimer _timer = new(TimeSpan.FromHours(3));
 
-    public async Task StartAsync(CancellationToken stoppingToken)
+    public Task StartAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Database Keep Alive service running.");
 
+        _ = DoWorkAsync(stoppingToken);
+
+        return Task.CompletedTask;
+    }
+
+    private async Task DoWorkAsync(CancellationToken stoppingToken)
+    {
         do
         {
             using var scope = serviceProvider.CreateScope();
