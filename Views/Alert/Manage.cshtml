@@ -56,7 +56,7 @@
         @foreach (var cart in allCarts)
         {
           <tr>
-            <td><input type="checkbox" name="SelectedCartIds" value="@cart.Id" checked="@Model.SelectedCartIds.Contains(cart.Id)"/></td>
+            <td><input type="checkbox" name="SelectedCartIds" value="@cart.Id" checked="@(Model?.SelectedCartIds?.Contains(cart.Id) ?? false)"/></td>
             <td>@cart.Name</td>
             <td>@(alert?.AlertCarts?.SingleOrDefault(c => c.CartId == cart.Id)?.ReadTime?.ToString() ?? "Unread")</td>
           </tr>

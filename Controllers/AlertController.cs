@@ -68,8 +68,20 @@ public partial class AlertController(FimDbContext dbContext, IHubContext<Assista
         var dbAlert = new Alert
         {
             Id = Guid.NewGuid(),
-            Content = model.Content
+            Content = model.Content,
+            AlertCarts = new List<AlertCart>(),
+            CreatedAt = DateTime.UtcNow
         };
+        
+        foreach (var addedCart in model.SelectedCartIds)
+        {
+            dbAlert.AlertCarts!.Add(new AlertCart
+            {
+                AlertId = Guid.Empty,
+                CartId = addedCart
+            });
+        }
+        
         await dbContext.Alerts.AddAsync(dbAlert);
         await dbContext.SaveChangesAsync();
 
