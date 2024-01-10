@@ -69,7 +69,7 @@ public class TwitchController : Controller
                     }
                     var slackMessage = type.GetString() switch
                     {
-                        "stream.offline" => $"🔴 {login} has gone offline on Twitch",
+                        "stream.offline" => $"🟥 {login} has gone offline on Twitch",
                         "stream.online" => $"🟢 {login} has started streaming on Twitch",
                         _ => throw new ApplicationException("Unreachable (slack message in webhook endpoint)")
                     };
