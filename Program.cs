@@ -68,7 +68,7 @@ builder.Services.AddAuthorization(opt =>
         .RequireAuthenticatedUser().Build();
 
     var authTokenPolicy =
-        new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireAuthenticatedUser().Build();
+        new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireClaim(ClaimTypes.CartId).Build();
     opt.AddPolicy(AuthTokenScheme.AuthenticationScheme, authTokenPolicy);
 });
 
@@ -155,6 +155,14 @@ if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var build
 
 builder.Services.AddHostedService<DatabaseKeepAliveService>();
 
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("assistant", pol =>
+    {
+        pol.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials().Build();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -178,8 +186,10 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseCors();
+
 app.MapHub<DisplayHub>("/DisplayHub");
-app.MapHub<AssistantHub>("/AssistantHub");
+app.MapHub<AssistantHub>("/AssistantHub").RequireCors("assistant");
 app.MapControllerRoute(
     "default",
     "{controller=Home}/{action=Index}/{id?}");

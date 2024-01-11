@@ -37,7 +37,7 @@ public class AuthTokenAuthSchemeHandler(
             return AuthenticateResult.Fail("Failed to retrieve token");
         }
 
-        var cart = dbContext.Carts.SingleOrDefault(c => c.AuthToken == token);
+        var cart = dbContext.Carts.SingleOrDefault(c => c.AuthToken == token.ToString());
 
         if (cart is null)
         {
