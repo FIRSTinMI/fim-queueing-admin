@@ -19,6 +19,9 @@ public class Cart
     
     public DateTime? LastSeen { get; set; }
     
+    [MaxLength(16)]
+    public string? TeamViewerId { get; set; }
+    
     public ICollection<AlertCart>? AlertCarts { get; set; }
 }
 

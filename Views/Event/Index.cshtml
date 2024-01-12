@@ -1,12 +1,21 @@
 ﻿@using Firebase.Database
-@using fim_queueing_admin.Services
+@using fim_queueing_admin.Data
 @inject FirebaseClient Client
+@inject FimDbContext DbContext
 @inject GlobalState State
-@* @inject MatchVideosService MatchVideosService *@
 @{
   ViewData["Title"] = "Events";
 
   var now = DateTime.UtcNow;
+
+  var carts = DbContext.Carts.ToDictionary(c => c.Id, c => c.Name);
+
+  async Task CartTemplate(Guid? cartId)
+  {
+    <a asp-controller="Cart" asp-action="Manage" asp-route-id="@cartId">
+      @((cartId is not null ? carts[cartId.Value] : null) ?? "")
+    </a>
+  }
   
   async Task TableTemplate(IEnumerable<FirebaseObject<DbEvent>> events)
   {
@@ -39,7 +48,7 @@
           <td>@evt.Key</td>
           <td>@evt.Object.eventCode</td>
           <td>@evt.Object.name</td>
-          <td>@(evt.Object.field.ToString() ?? "")</td>
+          <td>@{ await CartTemplate(evt.Object.cartId); }</td>
           <td>@state</td>
           <td>@(start?.DateTime.ToShortDateString())</td>
           <td>@(end?.DateTime.ToShortDateString())</td>
@@ -79,9 +88,6 @@
         }
         else
         {
-          // var eventVideoModels = await MatchVideosService.GetVideosForEvents(State.CurrentSeason, 
-          //   (IEnumerable<string>)currentEvents.Select(x => x.Object.eventCode)
-          //     .Where(x => !string.IsNullOrEmpty(x)));
           <table class="table">
             <thead>
             <tr>
@@ -107,16 +113,11 @@
                 EventState.PlayoffsInProgress => $"({evt.Object.playoffMatchNumber ?? "?"})",
                 _ => ""
               };
-              // MatchVideosService.MatchVideosModel? videos = null;
-              // if (!string.IsNullOrEmpty(evt.Object.eventCode))
-              // {
-              //   eventVideoModels.TryGetValue(evt.Object.eventCode, out videos); 
-              // }
               <tr class="@(start < now && end > now ? "table-success" : "")">
                 <td>@evt.Key</td>
                 <td>@evt.Object.eventCode</td>
                 <td>@evt.Object.name</td>
-                <td>@(evt.Object.field.ToString() ?? "")</td>
+                <td>@{ await CartTemplate(evt.Object.cartId); }</td>
                 <td>@state</td>
                 <td>
                   <span class="video-status" data-event-code="@evt.Object.eventCode">Loading...</span>

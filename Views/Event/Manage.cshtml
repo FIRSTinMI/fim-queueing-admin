@@ -2,8 +2,10 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using System.Text
 @using System.Reflection
+@using fim_queueing_admin.Data
 @using Humanizer
 @inject FirebaseClient Client
+@inject FimDbContext DbContext
 @inject GlobalState State
 @{
   ViewData["Title"] = "Manage";
@@ -97,6 +99,23 @@
         <div class="form-group mb-2">
           <label for="link">Timezone Offset</label>
           <input id="offset" name="offset" class="form-control" value="@eventData.start!.Value.Offset" type="text" />
+        </div>
+        <button class="btn btn-primary">Update</button>
+      </form>
+    </div>
+  </div>
+  
+  <div class="card mt-3">
+    @{
+      var carts = DbContext.Carts.OrderBy(c => c.Name).Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == eventData.cartId)).ToList();
+      carts.Insert(0, new SelectListItem("-- Unset --", null, !carts.Any(c => c.Selected)));
+    }
+    <h5 class="card-header">Change Cart</h5>
+    <div class="card-body">
+      <form method="post" asp-action="UpdateCart" asp-route-id="@(ViewData["id"])">
+        <div class="form-group mb-2">
+          <label for="cartId">Cart</label>
+          <select id="cartId" name="cartId" class="form-control" asp-items="carts"></select>
         </div>
         <button class="btn btn-primary">Update</button>
       </form>

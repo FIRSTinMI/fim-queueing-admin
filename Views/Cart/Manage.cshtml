@@ -26,13 +26,35 @@
     }
   }
   
+  <div class="card my-3">
+    <h5 class="card-header">Assist</h5>
+    <div class="card-body">
+      @if (!string.IsNullOrWhiteSpace(cart?.TeamViewerId))
+      {
+        <div class="text-center">
+          <a href="teamviewer10://control?device=@cart.TeamViewerId" class="btn btn-primary">Open TeamViewer</a>
+        </div>
+      }
+      else
+      {
+        <div class="alert alert-secondary" role="alert">
+          This cart does not have a TeamViewer ID set.
+        </div>
+      }
+    </div>
+  </div>
+  
   <h2>Information</h2>
   <form asp-action="Manage" method="post">
-      <div class="form-group mb-2">
-        <label asp-for="Name">Name</label>
-        <input asp-for="Name" class="form-control" type="text" />
-      </div>
-      <button class="btn btn-primary" type="submit">Save</button>
+    <div class="form-group mb-2">
+      <label asp-for="Name">Name</label>
+      <input asp-for="Name" class="form-control" type="text" />
+    </div>
+    <div class="form-group mb-2">
+      <label asp-for="TeamViewerId">TeamViewer ID</label>
+      <input asp-for="TeamViewerId" class="form-control" type="text" />
+    </div>
+    <button class="btn btn-primary" type="submit">Save</button>
   </form>
 
   @if (cart is not null)

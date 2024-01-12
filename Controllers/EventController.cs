@@ -70,4 +70,15 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost("[action]/{id}")]
+    public async Task<IActionResult> UpdateCart(string id, [FromForm] Guid cartId)
+    {
+        await client.Child($"/seasons/{state.CurrentSeason}/events/{id}").PatchAsync(JsonSerializer.Serialize(new
+        {
+            cartId,
+        }));
+
+        return RedirectToAction(nameof(Index));
+    }
 }

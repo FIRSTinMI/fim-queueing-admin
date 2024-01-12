@@ -35,6 +35,7 @@ public class CartController(FimDbContext dbContext) : Controller
         var dbCart = await dbContext.Carts.FindAsync(id);
         if (dbCart is null) return NotFound();
         dbCart.Name = model.Name;
+        dbCart.TeamViewerId = model.TeamViewerId;
 
         await dbContext.SaveChangesAsync();
         
@@ -48,7 +49,8 @@ public class CartController(FimDbContext dbContext) : Controller
         {
             Id = Guid.NewGuid(),
             AuthToken = Guid.NewGuid().ToString(),
-            Name = model.Name
+            Name = model.Name,
+            TeamViewerId = model.TeamViewerId,
         };
         await dbContext.Carts.AddAsync(dbCart);
         await dbContext.SaveChangesAsync();
@@ -61,5 +63,8 @@ public class CartController(FimDbContext dbContext) : Controller
         [MaxLength(255)]
         [Required]
         public required string Name { get; set; }
+        
+        [MaxLength(16)]
+        public string? TeamViewerId { get; set; }
     }
 }
