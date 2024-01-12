@@ -1,18 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using fim_queueing_admin.Data;
-using fim_queueing_admin.Hubs;
 using fim_queueing_admin.Models;
+using fim_queueing_admin.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace fim_queueing_admin.Controllers;
 
 [Authorize]
 [Route("[controller]")]
-public partial class AlertController(FimDbContext dbContext, IHubContext<AssistantHub> assistantHub) : Controller
+public partial class AlertController(FimDbContext dbContext, AssistantService assistantService) : Controller
 {
     
     [HttpGet]
@@ -57,7 +56,7 @@ public partial class AlertController(FimDbContext dbContext, IHubContext<Assista
 
         await dbContext.SaveChangesAsync();
         
-        await assistantHub.SendPendingAlertsToEveryone(dbContext);
+        await assistantService.SendPendingAlertsToEveryone();
         
         return RedirectToAction(nameof(Index));
     }
@@ -85,7 +84,7 @@ public partial class AlertController(FimDbContext dbContext, IHubContext<Assista
         await dbContext.Alerts.AddAsync(dbAlert);
         await dbContext.SaveChangesAsync();
 
-        await assistantHub.SendPendingAlertsToEveryone(dbContext);
+        await assistantService.SendPendingAlertsToEveryone();
         
         return RedirectToAction(nameof(Index));
     }
@@ -98,7 +97,7 @@ public partial class AlertController(FimDbContext dbContext, IHubContext<Assista
             dbContext.AlertCarts.Where(ac => ac.AlertId == id).ExecuteDeleteAsync()
         );
 
-        await assistantHub.SendPendingAlertsToEveryone(dbContext);
+        await assistantService.SendPendingAlertsToEveryone();
 
         return RedirectToAction(nameof(Index));
     }

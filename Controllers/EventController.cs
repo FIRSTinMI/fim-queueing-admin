@@ -72,12 +72,21 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
     }
 
     [HttpPost("[action]/{id}")]
-    public async Task<IActionResult> UpdateCart(string id, [FromForm] Guid cartId)
+    public async Task<IActionResult> UpdateCart(string id, [FromForm] Guid? cartId, [FromServices] AssistantService assistantService)
     {
+        var oldCartId = await client.Child($"/seasons/{state.CurrentSeason}/events/{id}/cartId")
+            .OnceSingleAsync<Guid?>();
         await client.Child($"/seasons/{state.CurrentSeason}/events/{id}").PatchAsync(JsonSerializer.Serialize(new
         {
             cartId,
         }));
+
+        var notifyTasks = new List<Task>();
+        if (oldCartId is not null && oldCartId != cartId)
+            notifyTasks.Add(assistantService.SendEventsToCart(oldCartId.Value));
+        if (cartId is not null) notifyTasks.Add(assistantService.SendEventsToCart(cartId.Value));
+
+        await Task.WhenAll(notifyTasks);
 
         return RedirectToAction(nameof(Index));
     }
