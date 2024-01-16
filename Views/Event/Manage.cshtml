@@ -13,6 +13,8 @@
 @{
   var eventData = await Client.Child(
     $"/seasons/{State.CurrentSeason}/events/{ViewData["id"]}").OnceSingleAsync<DbEvent>();
+  var carts = DbContext.Carts.OrderBy(c => c.Name).Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == eventData.cartId)).ToList();
+  
   await using var stream = Assembly.GetEntryAssembly()?.GetManifestResourceStream("fim_queueing_admin.Assets.EventWelcome.html");
   if (stream == null) throw new NullReferenceException();
   using var welcomeText = new StreamReader(stream);
@@ -40,7 +42,9 @@
       </h2>
       <div class="accordion-collapse collapse" id="welcomeCollapse">
         <div class="accordion-body">
-          <div>Field number: @(eventData.field != null ? eventData.field : "Unknown")</div>
+          <div>
+            Field number: @(carts.FirstOrDefault(c => c.Value == eventData?.cartId.ToString())?.Text ?? "Unknown")
+          </div>
           <div id="welcome">@Html.Raw(welcome)</div>
         </div>
       </div>
@@ -107,7 +111,6 @@
   
   <div class="card mt-3">
     @{
-      var carts = DbContext.Carts.OrderBy(c => c.Name).Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == eventData.cartId)).ToList();
       carts.Insert(0, new SelectListItem("-- Unset --", null, !carts.Any(c => c.Selected)));
     }
     <h5 class="card-header">Change Cart</h5>
