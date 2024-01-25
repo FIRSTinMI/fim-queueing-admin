@@ -27,7 +27,7 @@
       }
     }
 
-    var allCarts = await DbContext.Carts.Select(c => new
+    var allCarts = await DbContext.Carts.OrderBy(c => c.Name).Select(c => new
     {
       c.Id,
       c.Name
