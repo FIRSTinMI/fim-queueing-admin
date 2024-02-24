@@ -49,9 +49,30 @@ public class CreateEventsService : IService
 
         foreach (var apiEvent in apiEvents)
         {
+            string? streamEmbedLink = null;
+            if (!string.IsNullOrEmpty(apiEvent.TwitchChannel))
+            {
+                streamEmbedLink =
+                    $"https://player.twitch.tv/?channel={apiEvent.TwitchChannel}&parent=%HOST%&autoplay=true&muted=false";
+            }
+            
             if (existingEventCodes.Contains(apiEvent.EventCode))
             {
-                result.Errors.Add($"Skipping duplicate event code {apiEvent.EventCode}");
+                var evt = dbEvents.First(x => x.Object.eventCode == apiEvent.EventCode)!;
+                if (model.UpdateExistingEvents)
+                {
+                    if (streamEmbedLink != null && string.IsNullOrEmpty(evt.Object.streamEmbedLink))
+                    {
+                        await _client.Child($"/seasons/{model.Season}/events/{evt.Key}/streamEmbedLink")
+                            .PutAsync(JsonSerializer.Serialize(streamEmbedLink, JsonOptions));
+                        
+                        result.Logs.Add($"Updated stream link for {evt.Object.eventCode}");
+                    }
+                }
+                else
+                {
+                    result.Errors.Add($"Skipping duplicate event code {apiEvent.EventCode}");
+                }
                 continue;
             }
 
@@ -64,13 +85,6 @@ public class CreateEventsService : IService
             {
                 _logger.LogWarning(ex, "Could not find time zone {Timezone}", apiEvent.Timezone);
                 result.Errors.Add($"Failed to find time zone for {apiEvent.EventCode}, falling back to local");
-            }
-
-            string? streamEmbedLink = null;
-            if (!string.IsNullOrEmpty(apiEvent.TwitchChannel))
-            {
-                streamEmbedLink =
-                    $"https://player.twitch.tv/?channel={apiEvent.TwitchChannel}&parent=%HOST%&autoplay=true&muted=false";
             }
 
             string eventKey;
@@ -239,6 +253,14 @@ public class CreateEventsModel
     /// Newline-separated list of event codes.
     /// </summary>
     public string? EventCodes { get; set; }
+
+    /// <summary>
+    /// Update the metadata for already existing events
+    /// </summary>
+    /// <remarks>
+    /// Currently supports: <c>streamEmbedLink</c> if null
+    /// </remarks>
+    public bool UpdateExistingEvents { get; set; } = false;
 }
 
 public class CreateEventsResult
@@ -251,8 +273,9 @@ public class CreateEventsResult
         public DateTimeOffset StartDate { get; set; }
     }
 
-    public List<string> Errors { get; set; } = new();
-    public List<CreatedEvent> CreatedEvents { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
+    public List<string> Logs { get; set; } = [];
+    public List<CreatedEvent> CreatedEvents { get; set; } = [];
 }
 
 public class EventInfo
@@ -271,14 +294,12 @@ public interface IEventResponse
 }
 
 #pragma warning disable CS8618
-public class FrcEventsApiEventsResponse
+public partial class FrcEventsApiEventsResponse
 {
     public IEnumerable<ApiEvent> Events { get; set; }
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public class ApiEvent : IEventResponse
+    public partial class ApiEvent : IEventResponse
     {
-        private static readonly Regex TwitchChannelRegex = new Regex(@"$https:\/\/twitch\.tv/([\w\d]+)");
-        
         public IEnumerable<string> webcasts { get; set; }
         public string timezone { get; set; }
         public string code { get; set; }
@@ -289,9 +310,9 @@ public class FrcEventsApiEventsResponse
         public EventInfo ToEventInfo()
         {
             string? twitchChannel = null;
-            if (webcasts.Count() == 1 && TwitchChannelRegex.IsMatch(webcasts.First()))
+            if (webcasts.Count() == 1 && TwitchChannelRegex().IsMatch(webcasts.First()))
             {
-                twitchChannel = TwitchChannelRegex.Matches(webcasts.First())[1].Value;
+                twitchChannel = TwitchChannelRegex().Match(webcasts.First()).Groups["name"].Value;
             }
 
             return new EventInfo
@@ -304,6 +325,9 @@ public class FrcEventsApiEventsResponse
                 TwitchChannel = twitchChannel
             };
         }
+
+        [GeneratedRegex(@"^https:\/\/(?:www\.)?twitch\.tv\/(?<name>[\w\d]+)")]
+        private static partial Regex TwitchChannelRegex();
     }
 }
 

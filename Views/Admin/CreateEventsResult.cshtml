@@ -26,6 +26,19 @@ else
   </div>
 }
 
+@if (Model.Logs.Any())
+{
+  <div class="alert alert-info" role="alert">
+    <p>Logs:</p>
+    <ul>
+      @foreach (var log in Model.Logs)
+      {
+        <li>@log</li>
+      }
+    </ul>
+  </div>
+}
+
 @if (Model.CreatedEvents.Any())
 {
   <table class="table">

@@ -30,6 +30,10 @@
     <textarea asp-for="EventCodes" class="form-control"></textarea>
     <div class="form-text">Newline-separated.</div>
   </div>
+  <div class="mb-3 form-check">
+    <input asp-for="UpdateExistingEvents" class="form-check-input">
+    <label asp-for="UpdateExistingEvents" class="form-check-label">Update existing events</label>
+  </div>
   <div class="mb-3">
     <input type="submit" class="btn btn-primary" value="Submit"/>
   </div>
