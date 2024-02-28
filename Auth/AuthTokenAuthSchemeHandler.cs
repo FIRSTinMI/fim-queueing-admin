@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using fim_queueing_admin.Data;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace fim_queueing_admin.Auth;
@@ -19,7 +20,7 @@ public class AuthTokenAuthSchemeHandler(
     FimDbContext dbContext)
     : AuthenticationHandler<AuthTokenAuthSchemeOptions>(options, logger, encoder)
 {
-    protected async override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         // Read the token from request headers/cookies
         // Check that it's a valid session, depending on your implementation
@@ -37,7 +38,7 @@ public class AuthTokenAuthSchemeHandler(
             return AuthenticateResult.Fail("Failed to retrieve token");
         }
 
-        var cart = dbContext.Carts.SingleOrDefault(c => c.AuthToken == token.ToString());
+        var cart = await dbContext.Carts.SingleOrDefaultAsync(c => c.AuthToken == token.ToString());
 
         if (cart is null)
         {
