@@ -45,6 +45,22 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
         await assistantService.SendEventsToCart(CartId);
     }
 
+    public async Task GetStreamInfo()
+    {
+        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
+        if (cart is null || cart.StreamUrl is null || cart.StreamKey is null)
+        {
+            await Clients.Caller.SendAsync("StreamInfo", null);
+            return;
+        }
+
+        await Clients.Caller.SendAsync("StreamInfo", new
+        {
+            cart.StreamUrl,
+            cart.StreamKey
+        });
+    }
+
     private async Task SendPendingAlertsToCaller()
     {
         var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.CartId == CartId && ac.ReadTime == null)
