@@ -18,11 +18,7 @@
       cart = await DbContext.Carts.FindAsync((Guid)ViewData["id"]!);
       if (cart is not null)
       {
-        ViewData.Model = new CartController.CartManageModel
-        {
-          Name = cart.Name,
-          TeamViewerId = cart.TeamViewerId
-        };
+        ViewData.Model = new CartController.CartManageModel(cart);
       }
     }
   }
@@ -47,20 +43,30 @@
   
   <h2>Information</h2>
   <form asp-action="Manage" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
     <div class="form-group mb-2">
       <label asp-for="Name">Name</label>
-      <input asp-for="Name" class="form-control" type="text" />
+      <input asp-for="Name" class="form-control" type="text"/>
     </div>
     <div class="form-group mb-2">
       <label asp-for="TeamViewerId">TeamViewer ID</label>
-      <input asp-for="TeamViewerId" class="form-control" type="text" />
+      <input asp-for="TeamViewerId" class="form-control" type="text"/>
+    </div>
+    <div class="form-group mb-2">
+      <label asp-for="StreamUrl">RTMP URL</label>
+      <input asp-for="StreamUrl" class="form-control" type="text"/>
+    </div>
+    <div class="form-group mb-2">
+      <label asp-for="StreamKey">RTMP Stream Key <button class="btn btn-link" type="button" onclick="toggleStreamKey(this)">Show</button></label>
+      <input id="streamKey" asp-for="StreamKey" class="form-control" type="password" value="@(Model.StreamKey ?? "")"/>
     </div>
     <button class="btn btn-primary" type="submit">Save</button>
   </form>
 
   @if (cart is not null)
   {
-    <h2>Auth Information</h2>
+    <h2 class="mt-3">Auth Information</h2>
     <dl>
       <dt>Auth Token <button class="btn btn-link" onclick="toggleAuthToken(this)">Show</button></dt>
       <dd>
@@ -77,15 +83,24 @@
   </style>
   
   <script>
+    function showHideInput(inputEl, buttonEl) {
+      if (inputEl.type === "password") {
+        inputEl.type = "text";
+        buttonEl.innerText = "Hide";
+      } else {
+        inputEl.type = "password";
+        buttonEl.innerText = "Show";
+      }
+    }
+    
     function toggleAuthToken(el) {
       const inputElement = document.getElementById("authToken");
-      if (inputElement.type === "password") {
-        inputElement.type = "text";
-        el.innerText = "Hide";
-      } else {
-        inputElement.type = "password";
-        el.innerText = "Show";
-      }
+      showHideInput(inputElement, el);
+    }
+    
+    function toggleStreamKey(el) {
+      const inputElement = document.getElementById("streamKey");
+      showHideInput(inputElement, el);
     }
   </script>
 </div>

@@ -22,6 +22,12 @@ public class Cart
     [MaxLength(16)]
     public string? TeamViewerId { get; set; }
     
+    [MaxLength(200)]
+    public string? StreamUrl { get; set; }
+    
+    [MaxLength(100)]
+    public string? StreamKey { get; set; }
+    
     public ICollection<AlertCart>? AlertCarts { get; set; }
 }
 

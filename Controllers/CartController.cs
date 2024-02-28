@@ -32,10 +32,14 @@ public class CartController(FimDbContext dbContext) : Controller
     [HttpPost("[action]/{id:guid}")]
     public async Task<ActionResult> Manage(Guid id, [FromForm] CartManageModel model)
     {
+        if (!ModelState.IsValid) return View("Manage", model);
+
         var dbCart = await dbContext.Carts.FindAsync(id);
         if (dbCart is null) return NotFound();
-        dbCart.Name = model.Name;
+        dbCart.Name = model.Name!;
         dbCart.TeamViewerId = model.TeamViewerId;
+        dbCart.StreamUrl = model.StreamUrl;
+        dbCart.StreamKey = model.StreamKey;
 
         await dbContext.SaveChangesAsync();
         
@@ -45,12 +49,16 @@ public class CartController(FimDbContext dbContext) : Controller
     [HttpPost("[action]")]
     public async Task<ActionResult> Manage([FromForm] CartManageModel model)
     {
+        if (!ModelState.IsValid) return View("Manage", model);
+        
         var dbCart = new Cart
         {
             Id = Guid.NewGuid(),
             AuthToken = Guid.NewGuid().ToString(),
-            Name = model.Name,
+            Name = model.Name!,
             TeamViewerId = model.TeamViewerId,
+            StreamUrl = model.StreamUrl,
+            StreamKey = model.StreamKey
         };
         await dbContext.Carts.AddAsync(dbCart);
         await dbContext.SaveChangesAsync();
@@ -62,9 +70,27 @@ public class CartController(FimDbContext dbContext) : Controller
     {
         [MaxLength(255)]
         [Required]
-        public required string Name { get; set; }
+        public string? Name { get; set; }
         
         [MaxLength(16)]
         public string? TeamViewerId { get; set; }
+        
+        [MaxLength(200)]
+        public string? StreamUrl { get; set; }
+        
+        [MaxLength(100)]
+        public string? StreamKey { get; set; }
+
+        public CartManageModel()
+        {
+        }
+        
+        public CartManageModel(Cart dbModel)
+        {
+            Name = dbModel.Name;
+            TeamViewerId = dbModel.TeamViewerId;
+            StreamUrl = dbModel.StreamUrl;
+            StreamKey = dbModel.StreamKey;
+        }
     }
 }
