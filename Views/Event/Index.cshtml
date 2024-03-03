@@ -45,7 +45,7 @@
           _ => ""
         };
         <tr class="@(start < now && end > now ? "table-success" : "")">
-          <td>@evt.Key</td>
+          <td data-key="@evt.Key" class="event-key"></td>
           <td>@evt.Object.eventCode</td>
           <td>@evt.Object.name</td>
           <td>@{ await CartTemplate(evt.Object.cartId); }</td>
@@ -78,6 +78,7 @@
   }
   else
   {
+    <button class="btn btn-link" onclick="toggleEventKeys()">Show Keys</button>
     <div>
       <h2>Happening Now</h2>
       @{
@@ -114,7 +115,7 @@
                 _ => ""
               };
               <tr class="@(start < now && end > now ? "table-success" : "")">
-                <td>@evt.Key</td>
+                <td data-key="@evt.Key" class="event-key"></td>
                 <td>@evt.Object.eventCode</td>
                 <td>@evt.Object.name</td>
                 <td>@{ await CartTemplate(evt.Object.cartId); }</td>
@@ -145,5 +146,18 @@
         el.innerHTML = await resp.text();
       });
     });
+    
+    
+    window.showEventKeys = true;
+    function toggleEventKeys(evt) {
+      window.showEventKeys = !window.showEventKeys;
+      if (evt) {
+        evt.target.innerText = `${window.showEventKeys ? 'Hide' : 'Show'} Keys`;
+      }
+      document.querySelectorAll(".event-key").forEach(el => {
+        el.innerHTML = window.showEventKeys ? el.dataset["key"] : "\u2022".repeat(5);
+      });
+    }
+    toggleEventKeys();
   </script>
 }
