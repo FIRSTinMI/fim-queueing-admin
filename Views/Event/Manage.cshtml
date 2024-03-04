@@ -43,7 +43,7 @@
       <div class="accordion-collapse collapse" id="welcomeCollapse">
         <div class="accordion-body">
           <div>
-            Field number: @(carts.FirstOrDefault(c => c.Value == eventData?.cartId.ToString())?.Text ?? "Unknown")
+            Field number: @(carts.FirstOrDefault(c => c.Value == eventData.cartId.ToString())?.Text ?? "Unknown")
           </div>
           <div id="welcome">@Html.Raw(welcome)</div>
         </div>
@@ -58,7 +58,7 @@
     <div class="card-body">
       <form method="post" asp-action="UpdateState" asp-route-id="@(ViewData["id"])">
         <div class="form-group mb-2">
-          <label for="state">New State</label>
+          <label for="eventState">New State</label>
           @{
             var currentState = eventData.state?.ToString();
             var eventStateList = Enum.GetNames<EventState>().Select(n => 
@@ -81,7 +81,9 @@
             var currentLink = eventData.streamEmbedLink;
           }
           <input id="link" name="link" class="form-control" value="@currentLink" type="url" />
-          <div class="form-text">Ex: https://player.twitch.tv/?channel=firstinspires31&parent=fim-queueing.web.app&autoplay=true&muted=false</div>
+          <div class="form-text">
+            Ex: https://player.twitch.tv/?channel=firstinspires31&amp;parent=fim-queueing.web.app&amp;autoplay=true&amp;muted=false
+          </div>
         </div>
         <button class="btn btn-primary">Update</button>
       </form>
@@ -125,23 +127,23 @@
     </div>
   </div>
   
-  <div class="card mt-3">
-    <h5 class="card-header">Manage Admins</h5>
-    <div class="card-body">
-      <div class="form-group mb-2">
-        <label for="link">Start</label>
-        <input id="start" name="start" class="form-control" value="@eventData.start!.Value.ToString("s")" type="datetime-local"/>
-      </div>
-      <div class="form-group mb-2">
-        <label for="link">End</label>
-        <input id="end" name="end" class="form-control" value="@eventData.end!.Value.ToString("s")" type="datetime-local"/>
-      </div>
-      <div class="form-group mb-2">
-        <label for="link">Timezone Offset</label>
-        <input id="offset" name="offset" class="form-control" value="@eventData.start!.Value.Offset" type="text"/>
-      </div>
-    </div>
-  </div>
+  @* <div class="card mt-3"> *@
+  @*   <h5 class="card-header">Manage Admins</h5> *@
+  @*   <div class="card-body"> *@
+  @*     <div class="form-group mb-2"> *@
+  @*       <label for="link">Start</label> *@
+  @*       <input id="start" name="start" class="form-control" value="@eventData.start!.Value.ToString("s")" type="datetime-local"/> *@
+  @*     </div> *@
+  @*     <div class="form-group mb-2"> *@
+  @*       <label for="link">End</label> *@
+  @*       <input id="end" name="end" class="form-control" value="@eventData.end!.Value.ToString("s")" type="datetime-local"/> *@
+  @*     </div> *@
+  @*     <div class="form-group mb-2"> *@
+  @*       <label for="link">Timezone Offset</label> *@
+  @*       <input id="offset" name="offset" class="form-control" value="@eventData.start!.Value.Offset" type="text"/> *@
+  @*     </div> *@
+  @*   </div> *@
+  @* </div> *@
 </div>
 
 @section Scripts

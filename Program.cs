@@ -60,8 +60,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     opt.ExpireTimeSpan = TimeSpan.FromDays(31);
 }).AddScheme<AuthTokenAuthSchemeOptions, AuthTokenAuthSchemeHandler>(AuthTokenScheme.AuthenticationScheme, _ => { });
 
-var isBehindProxy = bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var res) && res;
-
 builder.Services.AddAuthorization(opt =>
 {
     opt.DefaultPolicy = new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -95,8 +93,10 @@ builder.Services.AddHttpClient("FRC", client =>
     client.BaseAddress = new Uri("https://frc-api.firstinspires.org/v3.0/");
     client.DefaultRequestHeaders.Authorization =
         new AuthenticationHeaderValue("Basic",
-            Convert.ToBase64String(Encoding.UTF8.GetBytes(builder.Configuration["FRCAPIToken"])));
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(builder.Configuration["FRCAPIToken"]!)));
 });
+if (string.IsNullOrWhiteSpace(builder.Configuration["TBAAPIToken"]))
+    throw new ApplicationException("TBA API Token is required to start up");
 builder.Services.AddHttpClient("TBA", client =>
 {
     client.BaseAddress = new Uri("https://www.thebluealliance.com/api/v3/");
@@ -145,13 +145,20 @@ if (!string.IsNullOrEmpty(builder.Configuration["Logging:GoogleProjectId"]))
     });
 }
 
-if (bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var builderProxy) && builderProxy)
+var isBehindProxy = bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var res) && res;
+
+if (isBehindProxy)
+{
+    var proxyIpAddress = builder.Configuration["ProxyIPAddress"];
+    if (proxyIpAddress is null)
+        throw new ApplicationException("Forwarded headers were enabled but no proxy IP was defined");
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders =
             ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        options.KnownProxies.Add(IPAddress.Parse(builder.Configuration["ProxyIPAddress"]));
+        options.KnownProxies.Add(IPAddress.Parse(proxyIpAddress));
     });
+}
 
 builder.Services.AddHostedService<DatabaseKeepAliveService>();
 
