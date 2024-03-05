@@ -85,7 +85,7 @@ public class CreateEventsService : IService
                         var startUtc = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.StartDate, tzInfo);
                         var endUtc = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.EndDate, tzInfo);
                         await _client.Child($"/seasons/{model.Season}/events/{evt.Key}")
-                            .PutAsync(JsonSerializer.Serialize(new
+                            .PatchAsync(JsonSerializer.Serialize(new
                             {
                                 startMs = startUtc.ToUnixTimeMilliseconds(),
                                 endMs = endUtc.ToUnixTimeMilliseconds(),
