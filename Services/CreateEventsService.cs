@@ -68,6 +68,33 @@ public class CreateEventsService : IService
                         
                         result.Logs.Add($"Updated stream link for {evt.Object.eventCode}");
                     }
+
+                    if (apiEvent.StartDate != evt.Object.start || apiEvent.EndDate != evt.Object.end)
+                    {
+                        var tzInfo = TimeZoneInfo.Local;
+                        try
+                        {
+                            tzInfo = TimeZoneInfo.FindSystemTimeZoneById(apiEvent.Timezone);
+                        }
+                        catch (TimeZoneNotFoundException ex)
+                        {
+                            _logger.LogWarning(ex, "Could not find time zone {Timezone}", apiEvent.Timezone);
+                            result.Errors.Add($"Failed to find time zone for {apiEvent.EventCode}, falling back to local");
+                        }
+                        
+                        var startUtc = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.StartDate, tzInfo);
+                        var endUtc = (DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(apiEvent.EndDate, tzInfo);
+                        await _client.Child($"/seasons/{model.Season}/events/{evt.Key}")
+                            .PutAsync(JsonSerializer.Serialize(new
+                            {
+                                startMs = startUtc.ToUnixTimeMilliseconds(),
+                                endMs = endUtc.ToUnixTimeMilliseconds(),
+                                start = new DateTimeOffset(apiEvent.StartDate, tzInfo.GetUtcOffset(apiEvent.StartDate)),
+                                end = new DateTimeOffset(apiEvent.EndDate, tzInfo.GetUtcOffset(apiEvent.EndDate)),
+                            }, JsonOptions));
+                        
+                        result.Logs.Add($"Updated start/end dates for {evt.Object.eventCode}");
+                    }
                 }
                 else
                 {
@@ -319,7 +346,7 @@ public partial class FrcEventsApiEventsResponse
             {
                 EventCode = code,
                 Name = name,
-                StartDate = dateStart,
+                StartDate = dateStart.AddDays(-1),
                 EndDate = dateEnd,
                 Timezone = timezone,
                 TwitchChannel = twitchChannel
@@ -358,7 +385,7 @@ public class BlueAllianceApiEventsResponse : IEventResponse
         {
             EventCode = key,
             Name = name,
-            StartDate = start_date.Date,
+            StartDate = start_date.Date.AddDays(-1),
             EndDate = end_date.Date.AddDays(1).AddSeconds(-1),
             Timezone = timezone,
             TwitchChannel = twitchChannel
