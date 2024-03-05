@@ -1,5 +1,6 @@
 using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
+using fim_queueing_admin.Models;
 using fim_queueing_admin.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace fim_queueing_admin.Hubs;
 
 [Authorize(AuthTokenScheme.AuthenticationScheme)]
-public class AssistantHub(FimDbContext dbContext, AssistantService assistantService) : Hub
+public class AssistantHub(FimDbContext dbContext, AssistantService assistantService, ILogger<AssistantHub> logger) : Hub
 {
     private Guid CartId => Guid.Parse(Context.User?.FindFirst(ClaimTypes.CartId)?.Value ??
                                       throw new ApplicationException("No cart id"));
@@ -26,6 +27,23 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
             .SetProperty(p => p.LastSeen, DateTime.UtcNow));
     }
 
+    /// <summary>
+    /// A message sent when AV Assistant first connects to the Hub. Provides basic info like version number.
+    /// </summary>
+    /// <param name="info"></param>
+    public async Task AppInfo(AssistantInfo info)
+    {
+        var cart = await GetCart();
+        logger.LogInformation(
+            "AV Assistant on cart {CartName} (hostname {Hostname}) has connected with version {Version}",
+            cart?.Name ?? "<<null>>", info.Hostname, info.Version);
+
+        if (cart is null) return;
+        
+        cart.AssistantVersion = info.Version;
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task MarkAlertRead(Guid alertId)
     {
         var alertCart =
@@ -39,7 +57,6 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
         await SendPendingAlertsToCaller();
     }
 
-    // ReSharper disable once UnusedMember.Global
     public async Task GetEvents()
     {
         await assistantService.SendEventsToCart(CartId);
@@ -47,18 +64,29 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
 
     public async Task GetStreamInfo()
     {
-        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
-        if (cart is null || cart.StreamUrl is null || cart.StreamKey is null)
+        var cart = await GetCart(true);
+        if (cart is null)
         {
             await Clients.Caller.SendAsync("StreamInfo", null);
             return;
         }
 
-        await Clients.Caller.SendAsync("StreamInfo", new
+        await Clients.Caller.SendAsync("StreamInfo", cart.StreamInfos.Where(i => i.Enabled).Select(i => new
         {
-            cart.StreamUrl,
-            cart.StreamKey
-        });
+            i.Index,
+            i.RtmpUrl,
+            i.RtmpKey
+        }).ToList());
+    }
+
+    private async Task<Cart?> GetCart(bool includeStreamInfo = false)
+    {
+        var query = dbContext.Carts.AsQueryable();
+        if (includeStreamInfo)
+        {
+            query = query.Include(c => c.StreamInfos);
+        }
+        return await query.FirstOrDefaultAsync(c => c.Id == CartId);
     }
 
     private async Task SendPendingAlertsToCaller()
@@ -67,5 +95,11 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
             .Select(ac => ac.Alert).ToListAsync();
 
         await Clients.Caller.SendAsync("PendingAlerts", pendingAlerts);
+    }
+
+    public class AssistantInfo
+    {
+        public required string Version { get; set; }
+        public required string Hostname { get; set; }
     }
 }

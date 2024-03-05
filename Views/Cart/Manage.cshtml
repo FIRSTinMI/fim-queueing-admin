@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using fim_queueing_admin.Data
 @using fim_queueing_admin.Controllers
+@using Microsoft.EntityFrameworkCore
 @model fim_queueing_admin.Controllers.CartController.CartManageModel
 @inject FimDbContext DbContext
 @{
@@ -12,13 +13,19 @@
     <h1 class="display-4">Manage Cart</h1>
   </div>
   @{
+    var NUM_STREAM_TABS = 3;
     Cart? cart = null;
     if (ViewData["id"] is not null)
     {
-      cart = await DbContext.Carts.FindAsync((Guid)ViewData["id"]!);
+      cart = await DbContext.Carts.Include(c => c.StreamInfos).SingleOrDefaultAsync(c => c.Id == (Guid)ViewData["id"]!);
       if (cart is not null)
       {
         ViewData.Model = new CartController.CartManageModel(cart);
+
+        if (ViewData.Model.StreamInfos.Count < NUM_STREAM_TABS)
+        {
+          ViewData.Model.StreamInfos.AddRange(Enumerable.Repeat(new CartController.StreamInfoManageModel(), NUM_STREAM_TABS - ViewData.Model.StreamInfos.Count));
+        }
       }
     }
   }
@@ -53,15 +60,51 @@
       <label asp-for="TeamViewerId">TeamViewer ID</label>
       <input asp-for="TeamViewerId" class="form-control" type="text"/>
     </div>
-    <div class="form-group mb-2">
-      <label asp-for="StreamUrl">RTMP URL</label>
-      <input asp-for="StreamUrl" class="form-control" type="text"/>
+    
+    <h3 class="mt-3">Stream Keys</h3>
+    <div class="card">
+      <div class="card-body">
+        <ul class="nav nav-tabs" id="nav-streams" role="tablist">
+          @for (var i = 0; i < NUM_STREAM_TABS; i++)
+          {
+            <li class="nav-item">
+              <a
+                class="nav-link @(i == 0 ? "active" : string.Empty)"
+                id="stream-@(i)-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#stream-@(i)"
+                type="button"
+                role="tab"
+                aria-controls="stream-@(i)"
+                aria-selected="@(i == 0 ? "true" : "false")">
+                @(i + 1)
+              </a>
+            </li>
+          }
+        </ul>
+        <div class="tab-content" id="streams-content">
+          @for (var i = 0; i < NUM_STREAM_TABS; i++)
+          {
+            <div class="tab-pane fade @(i == 0 ? "show active" : string.Empty)" id="stream-@(i)" role="tabpanel" aria-labelledby="stream-@(i)-tab">
+              <div class="form-group mb-2">
+                <label asp-for="@Model.StreamInfos[i].RtmpUrl">RTMP URL</label>
+                <input asp-for="@Model.StreamInfos[i].RtmpUrl" class="form-control" type="text"/>
+              </div>
+              <div class="form-group mb-2">
+                <label asp-for="@Model.StreamInfos[i].RtmpKey">RTMP Stream Key <button class="btn btn-link" type="button" onclick="toggleStreamKey(this)">Show</button></label>
+                <input asp-for="@Model.StreamInfos[i].RtmpKey" class="form-control streamKey" type="password" value="@(Model.StreamInfos[i].RtmpKey ?? "")"/>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" asp-for="@Model.StreamInfos[i].Enabled">
+                <label class="form-check-label" asp-for="@Model.StreamInfos[i].Enabled">Enabled?</label>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
     </div>
-    <div class="form-group mb-2">
-      <label asp-for="StreamKey">RTMP Stream Key <button class="btn btn-link" type="button" onclick="toggleStreamKey(this)">Show</button></label>
-      <input id="streamKey" asp-for="StreamKey" class="form-control" type="password" value="@(Model.StreamKey ?? "")"/>
-    </div>
-    <button class="btn btn-primary" type="submit">Save</button>
+    
+    <button class="btn btn-primary mt-2" type="submit">Save</button>
   </form>
 
   @if (cart is not null)
@@ -99,8 +142,10 @@
     }
     
     function toggleStreamKey(el) {
-      const inputElement = document.getElementById("streamKey");
-      showHideInput(inputElement, el);
+      const inputElements = document.getElementsByClassName("streamKey");
+      [...inputElements].forEach(e => {
+        showHideInput(e, el);
+      });
     }
   </script>
 </div>

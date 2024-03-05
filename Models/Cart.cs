@@ -28,7 +28,12 @@ public class Cart
     [MaxLength(100)]
     public string? StreamKey { get; set; }
     
+    [MaxLength(100)]
+    public string? AssistantVersion { get; set; }
+    
     public ICollection<AlertCart>? AlertCarts { get; set; }
+    
+    public ICollection<CartStreamInfo> StreamInfos { get; set; }
 }
 
 public class CartEntityTypeConfiguration : IEntityTypeConfiguration<Cart>

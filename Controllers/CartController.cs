@@ -3,6 +3,7 @@ using fim_queueing_admin.Data;
 using fim_queueing_admin.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace fim_queueing_admin.Controllers;
 
@@ -34,12 +35,19 @@ public class CartController(FimDbContext dbContext) : Controller
     {
         if (!ModelState.IsValid) return View("Manage", model);
 
-        var dbCart = await dbContext.Carts.FindAsync(id);
+        var dbCart = await dbContext.Carts.Include(c => c.StreamInfos).SingleOrDefaultAsync(c => c.Id == id);
         if (dbCart is null) return NotFound();
         dbCart.Name = model.Name!;
         dbCart.TeamViewerId = model.TeamViewerId;
-        dbCart.StreamUrl = model.StreamUrl;
-        dbCart.StreamKey = model.StreamKey;
+        dbCart.StreamInfos.Clear();
+        dbCart.StreamInfos = model.StreamInfos.Select((i, idx) => new CartStreamInfo
+        {
+            CartId = dbCart.Id,
+            Index = idx,
+            RtmpKey = i.RtmpKey,
+            RtmpUrl = i.RtmpUrl,
+            Enabled = i.Enabled
+        }).ToList();
 
         await dbContext.SaveChangesAsync();
         
@@ -50,15 +58,22 @@ public class CartController(FimDbContext dbContext) : Controller
     public async Task<ActionResult> Manage([FromForm] CartManageModel model)
     {
         if (!ModelState.IsValid) return View("Manage", model);
-        
+
+        var cartId = Guid.NewGuid();
         var dbCart = new Cart
         {
-            Id = Guid.NewGuid(),
+            Id = cartId,
             AuthToken = Guid.NewGuid().ToString(),
             Name = model.Name!,
             TeamViewerId = model.TeamViewerId,
-            StreamUrl = model.StreamUrl,
-            StreamKey = model.StreamKey
+            StreamInfos = model.StreamInfos.Select((i, idx) => new CartStreamInfo
+            {
+                CartId = cartId,
+                Index = idx,
+                RtmpKey = i.RtmpKey,
+                RtmpUrl = i.RtmpUrl,
+                Enabled = i.Enabled
+            }).ToList()
         };
         await dbContext.Carts.AddAsync(dbCart);
         await dbContext.SaveChangesAsync();
@@ -74,12 +89,8 @@ public class CartController(FimDbContext dbContext) : Controller
         
         [MaxLength(16)]
         public string? TeamViewerId { get; set; }
-        
-        [MaxLength(200)]
-        public string? StreamUrl { get; set; }
-        
-        [MaxLength(100)]
-        public string? StreamKey { get; set; }
+
+        public List<StreamInfoManageModel> StreamInfos { get; set; } = [];
 
         public CartManageModel()
         {
@@ -89,8 +100,23 @@ public class CartController(FimDbContext dbContext) : Controller
         {
             Name = dbModel.Name;
             TeamViewerId = dbModel.TeamViewerId;
-            StreamUrl = dbModel.StreamUrl;
-            StreamKey = dbModel.StreamKey;
+            StreamInfos = dbModel.StreamInfos.Select(i => new StreamInfoManageModel
+            {
+                RtmpUrl = i.RtmpUrl,
+                RtmpKey = i.RtmpKey,
+                Enabled = i.Enabled
+            }).ToList();
         }
+    }
+
+    public class StreamInfoManageModel
+    {
+        [MaxLength(512)]
+        public string? RtmpUrl { get; set; }
+        
+        [MaxLength(512)]
+        public string? RtmpKey { get; set; }
+
+        public bool Enabled { get; set; } = true;
     }
 }

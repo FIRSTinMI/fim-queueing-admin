@@ -24,7 +24,8 @@
     {
       c.Id,
       c.Name,
-      c.LastSeen
+      c.LastSeen,
+      c.AssistantVersion
     }).ToListAsync();
   }
   <div><a asp-action="Manage">Create Cart</a></div>
@@ -40,6 +41,7 @@
         <tr>
           <th>Name</th>
           <th>Last Seen</th>
+          <th>Version</th>
           <th>Actions</th>
         </tr>
         </thead>
@@ -49,6 +51,7 @@
           <tr>
             <td>@cart.Name</td>
             <td>@GetHumanizedLastSeen(cart.LastSeen)</td>
+            <td>@cart.AssistantVersion</td>
             <td><a asp-action="Manage" asp-route-id="@cart.Id">Manage</a></td>
           </tr>
         }
