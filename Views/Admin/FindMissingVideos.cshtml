@@ -1,0 +1,31 @@
+@model fim_queueing_admin.Services.FindMissingVideosModel
+@inject GlobalState State
+@{
+  ViewData["Title"] = "Find Missing Videos";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Find Missing Videos</h1>
+</div>
+
+<form asp-action="FindMissingVideos" method="post">
+  <div class="mb-3">
+    <label asp-for="DataSource">Data Source</label>
+    <select asp-for="DataSource" class="form-control">
+      <option value="frcEvents" selected>FRC.events</option>
+      @* <option value="blueAlliance">Blue Alliance</option> *@
+    </select>
+  </div>
+  <div class="mb-3">
+    <label asp-for="Season">Season</label>
+    <input asp-for="Season" class="form-control" value="@State.CurrentSeason"/>
+  </div>
+  <div class="mb-3">
+    <label asp-for="EventCodes">Event Codes</label>
+    <textarea asp-for="EventCodes" class="form-control"></textarea>
+    <div class="form-text">Newline-separated.</div>
+  </div>
+  <div class="mb-3">
+    <input type="submit" class="btn btn-primary" value="Submit"/>
+  </div>
+</form>

@@ -1,0 +1,54 @@
+@model fim_queueing_admin.Services.FindMissingVideosResult
+@{
+  ViewData["Title"] = "Missing Videos";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Missing Videos</h1>
+</div>
+
+@if (Model.Errors.Any())
+{
+  <div class="alert alert-warning" role="alert">
+    <p>Some errors occurred:</p>
+    <ul>
+      @foreach (var error in Model.Errors)
+      {
+        <li>@error</li>
+      }
+    </ul>
+  </div>
+}
+else
+{
+  <div class="alert alert-success" role="alert">
+    No errors!
+  </div>
+}
+
+@if (Model.Events.Any())
+{
+  <ul>
+    @foreach (var evt in Model.Events)
+    {
+      <li>@evt.EventCode: @evt.EventName</li>
+      <ul>
+      @if (evt.MissingVideos.Any())
+      {
+          @foreach (var vid in evt.MissingVideos)
+          {
+            <li>@vid.MatchName (@vid.StartTimeLocal)</li>
+          }
+      }
+      else
+      {
+        <li>(No missing videos)</li>
+      }
+      </ul>
+    }
+  </ul>
+}
+else
+{
+  <p>No events created...</p>
+}

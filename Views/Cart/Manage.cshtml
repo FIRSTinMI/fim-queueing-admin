@@ -92,7 +92,7 @@
               </div>
               <div class="form-group mb-2">
                 <label asp-for="@Model.StreamInfos[i].RtmpKey">RTMP Stream Key <button class="btn btn-link" type="button" onclick="toggleStreamKey(this)">Show</button></label>
-                <input asp-for="@Model.StreamInfos[i].RtmpKey" class="form-control streamKey" type="password" value="@(Model.StreamInfos[i].RtmpKey ?? "")"/>
+                <input asp-for="@Model.StreamInfos[i].RtmpKey" class="form-control streamKey" type="password" value="@(Model?.StreamInfos[i].RtmpKey ?? "")"/>
               </div>
               <div class="form-check">
                 <input type="checkbox" class="form-check-input" asp-for="@Model.StreamInfos[i].Enabled">

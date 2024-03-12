@@ -57,6 +57,8 @@ public class MatchVideosService : IService
         public class Match
         {
             public string? MatchVideoLink { get; set; }
+            public string? Description { get; set; }
+            public DateTime? ActualStartTime { get; set; }
         }
     }
 }
