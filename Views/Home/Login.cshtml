@@ -40,6 +40,8 @@
            }).then((res) => {
              if (res.redirected) {
                window.location.href = res.url;
+             } else if (res.status === 403) {
+               window.location.pathname = '/Home/AccessDenied';
              }
            }).catch((e) => alert(e));
           return false;

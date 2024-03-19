@@ -81,7 +81,7 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> ValidateToken([FromBody] LoginModel loginModel, [FromServices] FirebaseAuth auth)
     {
-        if (loginModel.Credential is null) return BadRequest();
+        if (loginModel.Credential is null) return Forbid();
         var principal = await ValidateToken(loginModel.Credential);
         var emailClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)!;
 
@@ -93,7 +93,7 @@ public class HomeController : Controller
 
         if (string.IsNullOrWhiteSpace(accessLevel))
         {
-            return BadRequest();
+            return Forbid();
         }
 
         await _auth.SignInAsync(HttpContext, AuthScheme,
