@@ -1,6 +1,7 @@
 ﻿@using FirebaseAdmin.Auth
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using fim_queueing_admin.Controllers
+@using fim_queueing_admin.Auth
 @model fim_queueing_admin.Controllers.UserController.UserManageModel
 @inject FirebaseAuth Auth
 @{
@@ -13,11 +14,12 @@
   </div>
   @{
     var user = await Auth.GetUserAsync((string)ViewData["uid"]!);
-    ViewData.Model = new UserController.UserManageModel()
+    ViewData.Model = new UserController.UserManageModel
     {
       IsAdmin = user.CustomClaims.ContainsKey("admin")
                 && bool.TryParse(user.CustomClaims["admin"].ToString(), out var isAdmin)
-                && isAdmin
+                && isAdmin,
+      UserAccessLevel = user.CustomClaims.ContainsKey(ClaimTypes.AccessLevel) ? user.CustomClaims[ClaimTypes.AccessLevel].ToString() : null
     };
   }
 
@@ -36,8 +38,17 @@
   <form asp-action="Manage" method="post">
     <div class="form-check">
       <input type="checkbox" class="form-check-input" asp-for="IsAdmin">
-      <label class="form-check-label" asp-for="IsAdmin">Global Admin?</label>
+      <label class="form-check-label" asp-for="IsAdmin">FiM Queueing: Global Admin?</label>
     </div>
-    <button class="btn btn-primary" type="submit">Save</button>
+    <div class="form-group">
+      <label asp-for="UserAccessLevel">Admin Panel: User Access Level</label>
+      <select class="form-control" asp-for="UserAccessLevel">
+        <option value="">No Access</option>
+        <option value="@UserAccessLevel.ReadOnly">Read only</option>
+        <option value="@UserAccessLevel.Editor">Editor</option>
+        <option value="@UserAccessLevel.Admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn btn-primary mt-2" type="submit">Save</button>
   </form>
 </div>

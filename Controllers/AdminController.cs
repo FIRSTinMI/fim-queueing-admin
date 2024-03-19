@@ -1,12 +1,13 @@
 using System.Text.Json;
+using fim_queueing_admin.Auth;
 using fim_queueing_admin.Services;
 using Firebase.Database;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.Admin)]
 public class AdminController : Controller
 {
     [HttpGet]

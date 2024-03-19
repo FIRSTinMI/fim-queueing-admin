@@ -108,25 +108,4 @@ public class TwitchController(ILogger<TwitchController> logger, IConfiguration c
         return string.Equals(request.Headers["Twitch-Eventsub-Message-Signature"].First(),
             "sha256=" + Convert.ToHexString(computedHmac), StringComparison.OrdinalIgnoreCase);
     }
-
-    // TODO: remove
-    [Authorize]
-    [HttpGet]
-    public async Task<ActionResult> ListWebhooks([FromServices] TwitchAPI twitch)
-    {
-        var hooks = await twitch.Helix.EventSub.GetEventSubSubscriptionsAsync();
-
-        return Ok(hooks.Subscriptions);
-    }
-    
-    // TODO: remove
-    [Authorize]
-    [HttpGet]
-    public async Task<ActionResult> DeleteAllWebhooks([FromServices] TwitchListenerService listenerService)
-    {
-        await listenerService.DeleteAllWebhooks(false);
-
-        // Meh, it's __probably__ okay. This is an admin endpoint anyway
-        return Ok();
-    }
 }

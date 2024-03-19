@@ -1,12 +1,13 @@
 using System.Text.Json;
+using fim_queueing_admin.Auth;
 using fim_queueing_admin.Services;
 using Firebase.Database;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.ViewEvent)]
 [Route("[controller]")]
 public class EventController(FirebaseClient client, GlobalState state) : Controller
 {
@@ -30,6 +31,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         return PartialView("_GetEventVideoStatus", vidStatus.Value);
     }
 
+    [AuthorizeOperation(Action.ManageEvent)]
     [HttpGet("[action]/{id}")]
     public IActionResult Manage(string id)
     {
@@ -37,6 +39,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         return View();
     }
 
+    [AuthorizeOperation(Action.ManageEvent)]
     [HttpPost("[action]/{id}")]
     public async Task<IActionResult> UpdateState(string id, [FromForm] string eventState)
     {
@@ -45,6 +48,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         return RedirectToAction(nameof(Index));
     }
     
+    [AuthorizeOperation(Action.ManageEvent)]
     [HttpPost("[action]/{id}")]
     public async Task<IActionResult> UpdateEmbedLink(string id, [FromForm] string link)
     {
@@ -53,6 +57,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         return RedirectToAction(nameof(Index));
     }
     
+    [AuthorizeOperation(Action.ManageEvent)]
     [HttpPost("[action]/{id}")]
     public async Task<IActionResult> UpdateDateTimes(string id, [FromForm] DateTime start, [FromForm] DateTime end, [FromForm] string offset)
     {
@@ -71,6 +76,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         return RedirectToAction(nameof(Index));
     }
 
+    [AuthorizeOperation(Action.ManageEvent)]
     [HttpPost("[action]/{id}")]
     public async Task<IActionResult> UpdateCart(string id, [FromForm] Guid? cartId, [FromServices] AssistantService assistantService)
     {

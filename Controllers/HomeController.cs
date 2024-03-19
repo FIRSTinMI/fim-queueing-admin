@@ -1,11 +1,13 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using fim_queueing_admin.Models;
+using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 
 namespace fim_queueing_admin.Controllers;
 
@@ -38,24 +40,75 @@ public class HomeController : Controller
 
     public class LoginModel
     {
-        [PasswordPropertyText]
-        public string? Password { get; set; }
+        public string? Credential { get; set; }
+    }
+    
+    public async Task<JsonWebKeySet> FetchGoogleCertificates()
+    {
+        using var http = new HttpClient();
+        var response = await http.GetAsync("https://www.googleapis.com/oauth2/v3/certs");
+
+        return new JsonWebKeySet(await response.Content.ReadAsStringAsync());
+    }
+
+    private async Task<ClaimsPrincipal> ValidateToken(string idToken)
+    {
+        var certificates = await FetchGoogleCertificates();
+
+        TokenValidationParameters tvp = new TokenValidationParameters()
+        {
+            ValidateActor = false, // check the profile ID
+
+            ValidateAudience = true, // check the client ID
+            ValidAudience = _configuration["Firebase:AuthClientId"],
+
+            ValidateIssuer = true, // check token came from Google
+            ValidIssuers = new List<string> { "accounts.google.com", "https://accounts.google.com" },
+
+            ValidateIssuerSigningKey = true,
+            RequireSignedTokens = true,
+            IssuerSigningKeys = certificates.GetSigningKeys(),
+            ValidateLifetime = true,
+            RequireExpirationTime = true
+        };
+
+        var jsth = new JwtSecurityTokenHandler();
+        var cp = jsth.ValidateToken(idToken, tvp, out _);
+
+        return cp;
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login([FromForm] LoginModel loginModel)
+    public async Task<IActionResult> ValidateToken([FromBody] LoginModel loginModel, [FromServices] FirebaseAuth auth)
     {
-        if (string.IsNullOrWhiteSpace(loginModel.Password) || loginModel.Password != _configuration["Password"])
+        if (loginModel.Credential is null) return BadRequest();
+        var principal = await ValidateToken(loginModel.Credential);
+        var emailClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)!;
+
+        var user = await auth.GetUserByEmailAsync(emailClaim.Value);
+        var accessLevel = "";
+        
+        user.CustomClaims.TryGetValue(ClaimTypes.AccessLevel, out var accessLevelObj);
+        if (accessLevelObj is not null) accessLevel = accessLevelObj.ToString()!;
+
+        if (string.IsNullOrWhiteSpace(accessLevel))
         {
-            _logger.LogWarning("Failed login from user at {IP}", HttpContext.Connection.RemoteIpAddress);
-            ModelState.AddModelError("password", "Incorrect password");
-            return View();
+            return BadRequest();
         }
 
         await _auth.SignInAsync(HttpContext, AuthScheme,
             new ClaimsPrincipal(
-                new ClaimsIdentity(new Claim[] { new("name", Guid.NewGuid().ToString()) }, "fim",
-                "name", "role")), null);
+                new ClaimsIdentity(
+                    new[]
+                    {
+                        emailClaim,
+                        new(ClaimTypes.AccessLevel, accessLevel)
+                    }, "fim",
+                    "name", "role")), new()
+            {
+                IssuedUtc = DateTimeOffset.FromUnixTimeSeconds(long.Parse(principal.FindFirst("iat")!.Value)),
+                ExpiresUtc = DateTimeOffset.FromUnixTimeSeconds(long.Parse(principal.FindFirst("exp")!.Value))
+            });
         _logger.LogInformation("Successful login from user at {IP}", HttpContext.Connection.RemoteIpAddress);
         return RedirectToAction(nameof(Index));
     }
@@ -70,6 +123,12 @@ public class HomeController : Controller
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+    
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult AccessDenied()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }

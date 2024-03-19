@@ -19,6 +19,7 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0-beta.2" />
       <PackageReference Include="SlackNet" Version="0.10.22" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.4.1" />
       <PackageReference Include="TimeZoneConverter" Version="6.0.1" />
       <PackageReference Include="TwitchLib.Api" Version="3.9.0" />
     </ItemGroup>

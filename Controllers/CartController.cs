@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
 using fim_queueing_admin.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.ViewCart)]
 [Route("[controller]")]
 public class CartController(FimDbContext dbContext) : Controller
 {
@@ -17,6 +18,7 @@ public class CartController(FimDbContext dbContext) : Controller
         return View();
     }
     
+    [AuthorizeOperation(Action.ManageCart)]
     [HttpGet("[action]/{id:guid}")]
     public ActionResult Manage(Guid id)
     {
@@ -24,12 +26,14 @@ public class CartController(FimDbContext dbContext) : Controller
         return View();
     }
     
+    [AuthorizeOperation(Action.CreateCart)]
     [HttpGet("[action]")]
     public ActionResult Manage()
     {
         return View();
     }
 
+    [AuthorizeOperation(Action.ManageCart)]
     [HttpPost("[action]/{id:guid}")]
     public async Task<ActionResult> Manage(Guid id, [FromForm] CartManageModel model)
     {
@@ -54,6 +58,7 @@ public class CartController(FimDbContext dbContext) : Controller
         return RedirectToAction(nameof(Index));
     }
     
+    [AuthorizeOperation(Action.CreateCart)]
     [HttpPost("[action]")]
     public async Task<ActionResult> Manage([FromForm] CartManageModel model)
     {

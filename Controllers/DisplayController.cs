@@ -1,11 +1,13 @@
-﻿using fim_queueing_admin.Hubs;
+﻿using fim_queueing_admin.Auth;
+using fim_queueing_admin.Hubs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.ViewDisplay)]
 public class DisplayController : Controller
 {
     private readonly IHubContext<DisplayHub> _hubCtx;
@@ -18,12 +20,13 @@ public class DisplayController : Controller
     }
 
     [HttpGet]
-    public IActionResult Index()
+    public IActionResult Index([FromServices] IAuthorizationService asv)
     {
         return View();
     }
 
     [HttpGet]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public IActionResult Manage(string id)
     {
         if (!_manager.GetConnections().ContainsKey(id))
@@ -36,6 +39,7 @@ public class DisplayController : Controller
     }
     
     [HttpPost]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public async Task<IActionResult> SendRefresh(string id)
     {
         await _hubCtx.Clients.Client(id).SendAsync("SendRefresh");
@@ -43,6 +47,7 @@ public class DisplayController : Controller
     }
     
     [HttpPost]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public async Task<IActionResult> SendRefreshToAll()
     {
         await _hubCtx.Clients.All.SendAsync("SendRefresh");
@@ -50,6 +55,7 @@ public class DisplayController : Controller
     }
     
     [HttpPost]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public async Task<IActionResult> Identify(string id)
     {
         await _hubCtx.Clients.Client(id).SendAsync("Identify");
@@ -57,6 +63,7 @@ public class DisplayController : Controller
     }
     
     [HttpPost]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public async Task<IActionResult> IdentifyAll()
     {
         await _hubCtx.Clients.All.SendAsync("Identify");
@@ -64,6 +71,7 @@ public class DisplayController : Controller
     }
     
     [HttpPost]
+    [AuthorizeOperation(Action.ManageDisplay)]
     public async Task<IActionResult> SendNewRoute(string id, [FromForm] string route)
     {
         await _hubCtx.Clients.Client(id).SendAsync("SendNewRoute", route);

@@ -1,15 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
 using fim_queueing_admin.Models;
 using fim_queueing_admin.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.ViewAlert)]
 [Route("[controller]")]
 public partial class AlertController(FimDbContext dbContext, AssistantService assistantService) : Controller
 {
@@ -20,6 +21,7 @@ public partial class AlertController(FimDbContext dbContext, AssistantService as
         return View();
     }
     
+    [AuthorizeOperation(Action.ManageAlert)]
     [HttpGet("[action]/{id:guid}")]
     public ActionResult Manage(Guid id)
     {
@@ -27,12 +29,14 @@ public partial class AlertController(FimDbContext dbContext, AssistantService as
         return View();
     }
     
+    [AuthorizeOperation(Action.CreateAlert)]
     [HttpGet("[action]")]
     public ActionResult Manage()
     {
         return View();
     }
 
+    [AuthorizeOperation(Action.ManageAlert)]
     [HttpPost("[action]/{id:guid}")]
     public async Task<ActionResult> Manage(Guid id, [FromForm] AlertManageModel model)
     {
@@ -61,6 +65,7 @@ public partial class AlertController(FimDbContext dbContext, AssistantService as
         return RedirectToAction(nameof(Index));
     }
     
+    [AuthorizeOperation(Action.CreateAlert)]
     [HttpPost("[action]")]
     public async Task<ActionResult> Manage([FromForm] AlertManageModel model)
     {
@@ -89,6 +94,7 @@ public partial class AlertController(FimDbContext dbContext, AssistantService as
         return RedirectToAction(nameof(Index));
     }
 
+    [AuthorizeOperation(Action.Admin)]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id)
     {

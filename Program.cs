@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using SlackNet;
 using TwitchLib.Api;
+using Action = fim_queueing_admin.Auth.Action;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     opt.LoginPath = "/Home/Login";
     opt.SlidingExpiration = true;
     opt.ExpireTimeSpan = TimeSpan.FromDays(31);
+    opt.AccessDeniedPath = "/Home/AccessDenied";
 }).AddScheme<AuthTokenAuthSchemeOptions, AuthTokenAuthSchemeHandler>(AuthTokenScheme.AuthenticationScheme, _ => { });
 
 builder.Services.AddAuthorization(opt =>
@@ -68,8 +70,16 @@ builder.Services.AddAuthorization(opt =>
     var authTokenPolicy =
         new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireClaim(ClaimTypes.CartId).Build();
     opt.AddPolicy(AuthTokenScheme.AuthenticationScheme, authTokenPolicy);
+
+    foreach (var action in typeof(Action).GetFields().Select(f => (string)f.GetValue(null)!))
+    {
+        opt.AddPolicy($"Action:{action}",
+            new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddRequirements(new UserAccessRequirement(action)).Build());
+    }
 });
 
+builder.Services.AddSingleton<IAuthorizationHandler, UserAccessHandler>();
 builder.Services.AddSingleton<DisplayHubManager>();
 builder.Services.AddSignalR();
 

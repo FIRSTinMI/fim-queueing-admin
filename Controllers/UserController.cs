@@ -1,10 +1,11 @@
+using fim_queueing_admin.Auth;
 using FirebaseAdmin.Auth;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Action = fim_queueing_admin.Auth.Action;
 
 namespace fim_queueing_admin.Controllers;
 
-[Authorize]
+[AuthorizeOperation(Action.ViewUser)]
 [Route("[controller]")]
 public class UserController : Controller
 {
@@ -21,6 +22,7 @@ public class UserController : Controller
         return View();
     }
 
+    [AuthorizeOperation(Action.ManageUser)]
     [HttpGet("[action]/{uid}")]
     public ActionResult Manage(string uid)
     {
@@ -29,6 +31,7 @@ public class UserController : Controller
         return View();
     }
     
+    [AuthorizeOperation(Action.ManageUser)]
     [HttpPost("[action]/{uid}")]
     public async Task<ActionResult> Manage(string uid, [FromForm] UserManageModel model)
     {
@@ -37,6 +40,14 @@ public class UserController : Controller
         var user = await _auth.GetUserAsync(uid);
         var claims = user.CustomClaims.ToDictionary(p => p.Key, p => p.Value);
         claims["admin"] = model.IsAdmin;
+        if (!string.IsNullOrEmpty(model.UserAccessLevel))
+        {
+            claims[ClaimTypes.AccessLevel] = model.UserAccessLevel;
+        }
+        else
+        {
+            claims.Remove(ClaimTypes.AccessLevel);
+        }
 
         await _auth.SetCustomUserClaimsAsync(user.Uid, claims);
 
@@ -46,5 +57,6 @@ public class UserController : Controller
     public class UserManageModel
     {
         public bool IsAdmin { get; set; }
+        public string? UserAccessLevel { get; set; }
     }
 }
