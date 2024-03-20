@@ -104,10 +104,10 @@ public class HomeController : Controller
                         emailClaim,
                         new(ClaimTypes.AccessLevel, accessLevel)
                     }, "fim",
-                    "name", "role")), new()
+                    "name", "role")), new AuthenticationProperties
             {
-                IssuedUtc = DateTimeOffset.FromUnixTimeSeconds(long.Parse(principal.FindFirst("iat")!.Value)),
-                ExpiresUtc = DateTimeOffset.FromUnixTimeSeconds(long.Parse(principal.FindFirst("exp")!.Value))
+                IssuedUtc = DateTimeOffset.UtcNow,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14)
             });
         _logger.LogInformation("Successful login from user at {IP}", HttpContext.Connection.RemoteIpAddress);
         return RedirectToAction(nameof(Index));
