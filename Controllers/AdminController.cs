@@ -71,7 +71,7 @@ public class AdminController : Controller
         var filteredEvents = events!.RootElement.GetProperty("Events").EnumerateArray().Where(e => e.GetProperty("dateEnd").GetDateTime() < DateTime.Now.AddDays(2));
 
         var rawStats = await vidSvc.GetVideosForEvents(state.CurrentSeason, filteredEvents.Select(e => e.GetProperty("code").GetString()!));
-        var stats = rawStats.Where(kvp => kvp.Value.PlayoffVideosAvailable > 0 || kvp.Value.PlayoffVideosAvailable > 0)
+        var stats = rawStats.Where(kvp => kvp.Value.QualVideosAvailable > 0 || kvp.Value.PlayoffVideosAvailable > 0)
             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         return Ok("EVENT\tQUAL\tPLAYOFF\n"+string.Join('\n',
