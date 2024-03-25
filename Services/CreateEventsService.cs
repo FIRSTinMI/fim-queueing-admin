@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using fim_queueing_admin.Clients;
 using fim_queueing_admin.Models;
 using Firebase.Database;
 
@@ -184,7 +185,7 @@ public class CreateEventsService : IService
                 await using var contentStream =
                     await districtEvents.Content.ReadAsStreamAsync();
                 var deserializedEvents =
-                    (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream))?.Events.ToList();
+                    (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream, FrcEventsClient.DefaultJsonOptions))?.Events.ToList();
                 if (deserializedEvents is null || !deserializedEvents.Any())
                 {
                     result.Errors.Add("No events were returned for that district code");
@@ -223,7 +224,7 @@ public class CreateEventsService : IService
                     await using var contentStream =
                         await eventResp.Content.ReadAsStreamAsync();
                     var deserializedEvents =
-                        (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream))?.Events.ToList();
+                        (await JsonSerializer.DeserializeAsync<FrcEventsApiEventsResponse>(contentStream, FrcEventsClient.DefaultJsonOptions))?.Events.ToList();
                     if (deserializedEvents is null || deserializedEvents.Count != 1)
                     {
                         result.Errors.Add($"No events were returned for event code {eventCode}");
@@ -324,31 +325,31 @@ public interface IEventResponse
 public partial class FrcEventsApiEventsResponse
 {
     public IEnumerable<ApiEvent> Events { get; set; }
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public partial class ApiEvent : IEventResponse
     {
-        public IEnumerable<string> webcasts { get; set; }
-        public string timezone { get; set; }
-        public string code { get; set; }
-        public string name { get; set; }
-        public DateTime dateStart { get; set; }
-        public DateTime dateEnd { get; set; }
+        public IEnumerable<string> Webcasts { get; set; }
+        public string DistrictCode { get; set; }
+        public string Timezone { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public DateTime DateStart { get; set; }
+        public DateTime DateEnd { get; set; }
 
         public EventInfo ToEventInfo()
         {
             string? twitchChannel = null;
-            if (webcasts.Count() == 1 && TwitchChannelRegex().IsMatch(webcasts.First()))
+            if (Webcasts.Count() == 1 && TwitchChannelRegex().IsMatch(Webcasts.First()))
             {
-                twitchChannel = TwitchChannelRegex().Match(webcasts.First()).Groups["name"].Value;
+                twitchChannel = TwitchChannelRegex().Match(Webcasts.First()).Groups["name"].Value;
             }
 
             return new EventInfo
             {
-                EventCode = code,
-                Name = name,
-                StartDate = dateStart.AddDays(-1),
-                EndDate = dateEnd,
-                Timezone = timezone,
+                EventCode = Code,
+                Name = Name,
+                StartDate = DateStart.AddDays(-1),
+                EndDate = DateEnd,
+                Timezone = Timezone,
                 TwitchChannel = twitchChannel
             };
         }

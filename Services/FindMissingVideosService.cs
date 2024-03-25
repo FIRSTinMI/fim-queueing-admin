@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
+using fim_queueing_admin.Clients;
 
 namespace fim_queueing_admin.Services;
 
-public class FindMissingVideosService(IHttpClientFactory httpClientFactory) : IService
+public class FindMissingVideosService(FrcEventsClient frcEventsClient) : IService
 {
     public async Task<FindMissingVideosResult> FindMissingVideos(FindMissingVideosModel model)
     {
@@ -13,21 +14,21 @@ public class FindMissingVideosService(IHttpClientFactory httpClientFactory) : IS
             return result;
         }
 
-        var httpClient = model.DataSource switch
+        var client = model.DataSource switch
         {
-            "frcEvents" => httpClientFactory.CreateClient("FRC"),
+            "frcEvents" => frcEventsClient,
             _ => throw new ApplicationException("Unknown data source")
         };
 
-        var apiEvents = await GetEventsFromApi(httpClient, model, result);
+        var apiEvents = await GetEventsFromApi(client, model, result);
 
         var results = new ConcurrentBag<FindMissingVideosResult.EventResult>();
         await Parallel.ForEachAsync(apiEvents, async (info, _) =>
         {
             var qualTask =
-                GetMissingVideosForTournamentLevel(httpClient, model.Season!.Value, info, TournamentLevel.Qual);
+                GetMissingVideosForTournamentLevel(client, model.Season!.Value, info, TournamentLevel.Qual);
             var playoffTask =
-                GetMissingVideosForTournamentLevel(httpClient, model.Season!.Value, info, TournamentLevel.Playoff);
+                GetMissingVideosForTournamentLevel(client, model.Season!.Value, info, TournamentLevel.Playoff);
             await qualTask;
             await playoffTask;
 
@@ -46,9 +47,15 @@ public class FindMissingVideosService(IHttpClientFactory httpClientFactory) : IS
         return result;
     }
 
-    private static async Task<IEnumerable<EventInfo>> GetEventsFromApi(HttpClient httpClient,
+    private static async Task<IEnumerable<EventInfo>> GetEventsFromApi(FrcEventsClient client,
         FindMissingVideosModel model, FindMissingVideosResult result)
     {
+        if (model.Season is null)
+        {
+            result.Errors.Add("Season is required");
+            return Enumerable.Empty<EventInfo>();
+        }
+        
         var eventCodes = model.EventCodes?.Split('\n').Select(x => x.Trim()) ?? Enumerable.Empty<string>();
         var apiEvents = new List<EventInfo>();
 
@@ -69,23 +76,14 @@ public class FindMissingVideosService(IHttpClientFactory httpClientFactory) : IS
 
             if (model.DataSource == "frcEvents")
             {
-                var eventResp = await httpClient.GetAsync($"{model.Season}/events?eventCode={eventCode}");
-                if (!eventResp.IsSuccessStatusCode)
+                var evt = (await client.GetEventInfo(model.Season.ToString()!, eventCode: eventCode)).SingleOrDefault();
+                if (evt is null)
                 {
-                    result.Errors.Add($"Failed to fetch events for the event code {eventCode}");
+                    result.Errors.Add($"No events were returned for event code {eventCode}");
                 }
                 else
                 {
-                    var deserializedEvents = (await eventResp.Content.ReadFromJsonAsync<FrcEventsApiEventsResponse>())
-                        ?.Events.ToList();
-                    if (deserializedEvents is null || deserializedEvents.Count != 1)
-                    {
-                        result.Errors.Add($"No events were returned for event code {eventCode}");
-                    }
-                    else
-                    {
-                        apiEvents.AddRange(deserializedEvents.Select(e => e.ToEventInfo()));
-                    }
+                    apiEvents.Add(evt.ToEventInfo());
                 }
             }
             else
@@ -98,16 +96,16 @@ public class FindMissingVideosService(IHttpClientFactory httpClientFactory) : IS
     }
 
     private static async Task<List<FindMissingVideosResult.MissingVideo>> GetMissingVideosForTournamentLevel(
-        HttpClient httpClient, int season, EventInfo eventInfo, TournamentLevel tournamentLevel)
+        FrcEventsClient client, int season, EventInfo eventInfo, TournamentLevel tournamentLevel)
     {
-        var matches = await httpClient.GetFromJsonAsync<MatchVideosService.MatchResponse>(
-            $"{season}/matches/{eventInfo.EventCode}?tournamentLevel={tournamentLevel.ToFrcEventsLevel()}");
-        return matches!.Matches!.Where(m => string.IsNullOrEmpty(m.MatchVideoLink)).Select(m =>
-            new FindMissingVideosResult.MissingVideo
-            {
-                MatchName = m.Description,
-                StartTimeLocal = m.ActualStartTime
-            }).ToList();
+        var matches = await client.GetMatchResults(season.ToString(), eventInfo.EventCode, tournamentLevel);
+        return matches.Where(m => string.IsNullOrEmpty(m.MatchVideoLink) && m.PostResultTime is not null)
+            .Select(m =>
+                new FindMissingVideosResult.MissingVideo
+                {
+                    MatchName = m.Description,
+                    StartTimeLocal = m.ActualStartTime
+                }).ToList();
     }
 }
 

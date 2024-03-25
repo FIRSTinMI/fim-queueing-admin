@@ -1,0 +1,37 @@
+﻿@model Dictionary<string, fim_queueing_admin.Services.MatchVideosService.MatchVideosModel>
+@{
+  ViewData["Title"] = "Video Stats";
+
+  string GetPercentage(int? available, int? totalMatches)
+  {
+    if (totalMatches is null || available is null || totalMatches == 0) return "??";
+    var percentage = decimal.Divide(available.Value, totalMatches.Value) * 100;
+
+    return percentage.ToString("N2") + "%";
+  }
+}
+
+<div class="container">
+  <div class="text-center">
+    <h1 class="display-4">@(ViewData["Title"])</h1>
+  </div>
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Event Code</th>
+      <th>Qualification Video %</th>
+      <th>Playoff Video %</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var kvp in Model)
+    {
+      <tr>
+        <td>@kvp.Key</td>
+        <td>@GetPercentage(kvp.Value.QualVideosAvailable, kvp.Value.QualMatchesTotal)</td>
+        <td>@GetPercentage(kvp.Value.PlayoffVideosAvailable, kvp.Value.PlayoffMatchesTotal)</td>
+      </tr>
+    }
+    </tbody>
+  </table>
+</div>

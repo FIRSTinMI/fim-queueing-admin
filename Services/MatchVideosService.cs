@@ -1,18 +1,23 @@
+using fim_queueing_admin.Clients;
+
 namespace fim_queueing_admin.Services;
 
-public class MatchVideosService : IService
+public class MatchVideosService(FrcEventsClient frcClient) : IService
 {
-    private readonly HttpClient _frcClient;
-
-    public MatchVideosService(IHttpClientFactory hcf)
-    {
-        _frcClient = hcf.CreateClient("FRC");
-    }
-    
     public async Task<Dictionary<string, MatchVideosModel?>> GetVideosForEvents(string season, IEnumerable<string> events)
     {
         var models = await Task.WhenAll(events.Select(x => GetVideosForEvent(season, x)));
         return new Dictionary<string, MatchVideosModel?>(models);
+    }
+
+    private async Task<(int videos, int playedMatches)> GetMatchStatsForLevel(string season, string evt, TournamentLevel level)
+    {
+        var playedMatches =
+            (await frcClient.GetMatchResults(season, evt, level)).Where(m => m.PostResultTime is not null).ToList();
+
+        if (playedMatches.Count == 0) return (0, 0);
+
+        return (playedMatches.Count(m => !string.IsNullOrEmpty(m.MatchVideoLink)), playedMatches.Count);
     }
 
     public async Task<KeyValuePair<string, MatchVideosModel?>> GetVideosForEvent(string season, string evt)
@@ -23,15 +28,15 @@ public class MatchVideosService : IService
             await Task.WhenAll(new List<Task> {
                 Task.Run(async () =>
                 {
-                    var matches = await _frcClient.GetFromJsonAsync<MatchResponse>($"{season}/matches/{evt}?tournamentLevel=qual");
-                    outModel.QualMatchesTotal = matches?.Matches?.Count();
-                    outModel.QualVideosAvailable = matches?.Matches?.Count(x => !string.IsNullOrEmpty(x.MatchVideoLink));
+                    var qualStats = await GetMatchStatsForLevel(season, evt, TournamentLevel.Qual);
+                    outModel.QualMatchesTotal = qualStats.playedMatches;
+                    outModel.QualVideosAvailable = qualStats.videos;
                 }),
                 Task.Run(async () =>
                 {
-                    var matches = await _frcClient.GetFromJsonAsync<MatchResponse>($"{season}/matches/{evt}?tournamentLevel=playoff");
-                    outModel.PlayoffVideosTotal = matches?.Matches?.Count();
-                    outModel.PlayoffVideosAvailable = matches?.Matches?.Count(x => !string.IsNullOrEmpty(x.MatchVideoLink));
+                    var playoffStats = await GetMatchStatsForLevel(season, evt, TournamentLevel.Playoff);
+                    outModel.PlayoffMatchesTotal = playoffStats.playedMatches;
+                    outModel.PlayoffVideosAvailable = playoffStats.videos;
                 })
             });
 
@@ -48,17 +53,19 @@ public class MatchVideosService : IService
         public int? QualVideosAvailable { get; set; }
         public int? QualMatchesTotal { get; set; }
         public int? PlayoffVideosAvailable { get; set; }
-        public int? PlayoffVideosTotal { get; set; }
+        public int? PlayoffMatchesTotal { get; set; }
     }
 
-    public class MatchResponse
+    public class MatchResponse(IEnumerable<MatchResponse.Match>? matches)
     {
-        public IEnumerable<Match>? Matches { get; set; }
-        public class Match
+        public IEnumerable<Match>? Matches { get;} = matches;
+
+        public record Match
         {
-            public string? MatchVideoLink { get; set; }
-            public string? Description { get; set; }
-            public DateTime? ActualStartTime { get; set; }
+            public string? MatchVideoLink;
+            public string? Description;
+            public DateTime? ActualStartTime;
+            public DateTime? PostResultTime;
         }
     }
 }

@@ -1,5 +1,5 @@
 @model fim_queueing_admin.Services.MatchVideosService.MatchVideosModel
 
-<a href="https://frc-events.firstinspires.org/@ViewData["season"]/@ViewData["eventCode"]/qualifications">Q(@(Model?.QualVideosAvailable?.ToString() ?? "?")/@(Model?.QualMatchesTotal?.ToString() ?? "?"))</a>
+<a href="https://frc-events.firstinspires.org/@ViewData["season"]/@ViewData["eventCode"]/qualifications">Q(@(Model.QualVideosAvailable?.ToString() ?? "?")/@(Model.QualMatchesTotal?.ToString() ?? "?"))</a>
 &nbsp;
-<a href="https://frc-events.firstinspires.org/@ViewData["season"]/@ViewData["eventCode"]/playoffs">P(@(Model?.PlayoffVideosAvailable?.ToString() ?? "?")/@(Model?.PlayoffVideosTotal?.ToString() ?? "?"))</a>
+<a href="https://frc-events.firstinspires.org/@ViewData["season"]/@ViewData["eventCode"]/playoffs">P(@(Model.PlayoffVideosAvailable?.ToString() ?? "?")/@(Model.PlayoffMatchesTotal?.ToString() ?? "?"))</a>

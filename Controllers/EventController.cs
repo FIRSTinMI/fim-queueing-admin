@@ -1,5 +1,6 @@
 using System.Text.Json;
 using fim_queueing_admin.Auth;
+using fim_queueing_admin.Clients;
 using fim_queueing_admin.Services;
 using Firebase.Database;
 using Microsoft.AspNetCore.Mvc;
@@ -95,5 +96,48 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         await Task.WhenAll(notifyTasks);
 
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Get the qual and playoff stats for uploaded videos
+    /// </summary>
+    /// <param name="districtCode">The district code to search with</param>
+    /// <param name="except">When true, show stats for all events NOT in <c>districtCode</c></param>
+    /// <returns></returns>
+    [AuthorizeOperation(Action.ViewEvent)]
+    [HttpGet("VideoStats/{districtCode}")]
+    public async Task<IActionResult> GetVideoStats(string districtCode, [FromQuery] bool except, [FromServices] MatchVideosService vidSvc, [FromServices] FrcEventsClient frcApi)
+    {
+        IEnumerable<FrcEventsApiEventsResponse.ApiEvent> events;
+        if (!except)
+        {
+            events = await frcApi.GetEventInfo(state.CurrentSeason, districtCode: districtCode);
+        }
+        else
+        {
+            events = (await frcApi.GetEventInfo(state.CurrentSeason)).Where(e => e.DistrictCode != districtCode);
+        }
+        
+        var filteredEvents = events.Where(e => e.DateEnd < DateTime.Now.AddDays(2));
+
+        var rawStats = await vidSvc.GetVideosForEvents(state.CurrentSeason, filteredEvents.Select(e => e.Code));
+        var stats = rawStats.Where(kvp => kvp.Value!.QualVideosAvailable > 0 || kvp.Value.PlayoffVideosAvailable > 0)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        return View(stats);
+    }
+    
+    [HttpGet("[action]")]
+    public IActionResult FindMissingVideos()
+    {
+        return View();
+    }
+    
+    [HttpPost("[action]")]
+    public async Task<IActionResult> FindMissingVideos([FromForm] FindMissingVideosModel model,
+        [FromServices] FindMissingVideosService service)
+    {
+        var result = await service.FindMissingVideos(model);
+        return View("FindMissingVideosResult", result);
     }
 }

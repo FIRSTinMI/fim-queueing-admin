@@ -79,6 +79,11 @@
   else
   {
     <button class="btn btn-link p-0" onclick="toggleEventKeys()">Show Keys</button>
+    <a class="btn btn-link p-0" asp-controller="Event" asp-action="GetVideoStats" asp-route-districtCode="FIM"
+       asp-route-except="false">FIM Video Stats</a>
+    <a class="btn btn-link p-0" asp-controller="Event" asp-action="GetVideoStats" asp-route-districtCode="FIM"
+       asp-route-except="true">Non-FIM Video Stats</a>
+    <a class="btn btn-link p-0" asp-controller="Event" asp-action="FindMissingVideos">Find Missing Videos</a>
     <div>
       <h2>Happening Now</h2>
       @{
