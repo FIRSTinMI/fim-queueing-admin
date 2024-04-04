@@ -76,6 +76,23 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         
         return RedirectToAction(nameof(Index));
     }
+    
+    [AuthorizeOperation(Action.ManageEvent)]
+    [HttpPost("[action]/{id}")]
+    public async Task<IActionResult> UpdateMessage(string id, [FromForm] string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            await client.Child($"/seasons/{state.CurrentSeason}/events/{id}/message").DeleteAsync();
+        }
+        else
+        {
+            await client.Child($"/seasons/{state.CurrentSeason}/events/{id}/message")
+                .PutAsync(JsonSerializer.Serialize(message));
+        }
+        
+        return RedirectToAction(nameof(Index));
+    }
 
     [AuthorizeOperation(Action.ManageEvent)]
     [HttpPost("[action]/{id}")]

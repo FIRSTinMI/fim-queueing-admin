@@ -72,6 +72,22 @@
   </div>
   
   <div class="card mt-3">
+      <h5 class="card-header">Message</h5>
+      <div class="card-body">
+        <form method="post" asp-action="UpdateMessage" asp-route-id="@(ViewData["id"])">
+          <div class="form-group mb-2">
+            <label for="eventState">Message</label>
+            @{
+              var currentMessage = eventData.message ?? "";
+            }
+            <input id="message" name="message" class="form-control" value="@currentMessage" type="text" />
+          </div>
+          <button class="btn btn-primary">Update</button>
+        </form>
+      </div>
+    </div>
+  
+  <div class="card mt-3">
     <h5 class="card-header">Embed Link</h5>
     <div class="card-body">
       <form method="post" asp-action="UpdateEmbedLink" asp-route-id="@(ViewData["id"])">

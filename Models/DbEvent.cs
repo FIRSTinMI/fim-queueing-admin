@@ -17,4 +17,5 @@ public class DbEvent
     public string? playoffMatchNumber { get; set; }
     public int? numQualMatches { get; set; }
     public string? dataSource { get; set; }
+    public string? message { get; set; }
 }
