@@ -48,7 +48,7 @@ builder.Services.AddSingleton(_ => new FirebaseClient(builder.Configuration["Fir
 builder.Services.AddDbContext<FimDbContext>(opt =>
 {
     var connectionString = builder.Configuration.GetConnectionString("Default");
-    opt.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    opt.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
 });
 
 builder.Services.AddSingleton<FirebaseAuth>(_ => FirebaseAuth.DefaultInstance);

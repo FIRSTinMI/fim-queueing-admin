@@ -17,7 +17,7 @@
     Cart? cart = null;
     if (ViewData["id"] is not null)
     {
-      cart = await DbContext.Carts.Include(c => c.StreamInfos).SingleOrDefaultAsync(c => c.Id == (Guid)ViewData["id"]!);
+      cart = await DbContext.Carts.SingleOrDefaultAsync(c => c.Id == (Guid)ViewData["id"]!);
       if (cart is not null)
       {
         ViewData.Model = new CartController.CartManageModel(cart);
@@ -33,10 +33,10 @@
   <div class="card my-3">
     <h5 class="card-header">Assist</h5>
     <div class="card-body">
-      @if (!string.IsNullOrWhiteSpace(cart?.TeamViewerId))
+      @if (!string.IsNullOrWhiteSpace(cart?.TeamviewerId))
       {
         <div class="text-center">
-          <a href="teamviewer10://control?device=@cart.TeamViewerId" class="btn btn-primary">Open TeamViewer</a>
+          <a href="teamviewer10://control?device=@cart.TeamviewerId" class="btn btn-primary">Open TeamViewer</a>
         </div>
       }
       else
@@ -113,7 +113,7 @@
     <dl>
       <dt>Auth Token <button class="btn btn-link" onclick="toggleAuthToken(this)">Show</button></dt>
       <dd>
-        <input id="authToken" type="password" readonly value="@cart.AuthToken" />
+        <input id="authToken" type="password" readonly value="@(cart.Configuration?.AuthToken)" />
       </dd>
     </dl>
   }

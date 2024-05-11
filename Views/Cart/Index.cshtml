@@ -20,12 +20,12 @@
     <h1 class="display-4">Carts</h1>
   </div>
   @{
-    var carts = await DbContext.Carts.OrderBy(c => c.Name).Select(c => new
+    var carts = await DbContext.Carts.OrderBy(c => c.Name).AsNoTracking().Select(c => new
     {
       c.Id,
       c.Name,
-      c.LastSeen,
-      c.AssistantVersion
+      AssistantVersion = c.Configuration != null ? c.Configuration!.AssistantVersion : null,
+      LastSeen = c.Configuration != null ? c.Configuration!.LastSeen : (DateTime?)null
     }).ToListAsync();
   }
   <div><a asp-action="Manage">Create Cart</a></div>

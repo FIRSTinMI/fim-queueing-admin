@@ -1,47 +1,38 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace fim_queueing_admin.Models;
 
-[Table("Carts")]
 [EntityTypeConfiguration(typeof(CartEntityTypeConfiguration))]
-public class Cart
+public class Cart : BaseEquipment
 {
-    public Guid Id { get; set; }
+    public AvCartConfiguration? Configuration { get; set; } = new();
     
-    [MaxLength(255)]
-    public required string Name { get; set; }
-    
-    [MaxLength(100)]
-    public required string AuthToken { get; set; }
-    
-    public DateTime? LastSeen { get; set; }
-    
-    [MaxLength(16)]
-    public string? TeamViewerId { get; set; }
-    
-    [MaxLength(200)]
-    public string? StreamUrl { get; set; }
-    
-    [MaxLength(100)]
-    public string? StreamKey { get; set; }
-    
-    [MaxLength(100)]
-    public string? AssistantVersion { get; set; }
-    
+    // TODO: This is not yet implemented in Postgres
     public ICollection<AlertCart>? AlertCarts { get; set; }
     
-    public ICollection<CartStreamInfo> StreamInfos { get; set; }
+    public class AvCartConfiguration
+    {
+        public string AuthToken { get; set; }
+        public string AssistantVersion { get; set; }
+        public DateTime LastSeen { get; set; }
+        public IEnumerable<CartStreamInfo>? StreamInfo { get; set; }
+    }
 }
 
-public class CartEntityTypeConfiguration : IEntityTypeConfiguration<Cart>
+public class CartEntityTypeConfiguration : BaseEquipmentEntityTypeConfiguration<Cart>
 {
-    public void Configure(EntityTypeBuilder<Cart> builder)
+    protected override void ConfigureEntity(EntityTypeBuilder<Cart> builder)
     {
         builder
             .HasMany(a => a.AlertCarts)
             .WithOne(ac => ac.Cart);
+        builder.HasQueryFilter(c => c.EquipmentType == EquipmentType.AvCart);
+        builder.OwnsOne(c => c.Configuration, d =>
+        {
+            d.ToJson();
+            d.OwnsMany<CartStreamInfo>(c => c.StreamInfo);
+        });
     }
 }

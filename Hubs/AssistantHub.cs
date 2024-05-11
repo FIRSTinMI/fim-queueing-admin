@@ -1,3 +1,4 @@
+using System.Text.Json;
 using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
 using fim_queueing_admin.Models;
@@ -17,14 +18,14 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
     public override async Task OnConnectedAsync()
     {
         await dbContext.Carts.Where(c => c.Id == CartId).ExecuteUpdateAsync(c => c
-            .SetProperty(p => p.LastSeen, DateTime.MaxValue));
+            .SetProperty(p => p.Configuration!.LastSeen, DateTime.MaxValue));
         await SendPendingAlertsToCaller();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await dbContext.Carts.Where(c => c.Id == CartId).ExecuteUpdateAsync(c => c
-            .SetProperty(p => p.LastSeen, DateTime.UtcNow));
+            .SetProperty(p => p.Configuration!.LastSeen, DateTime.UtcNow));
     }
 
     /// <summary>
@@ -39,8 +40,9 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
             cart?.Name ?? "<<null>>", info.Hostname, info.Version);
 
         if (cart is null) return;
-        
-        cart.AssistantVersion = info.Version;
+        cart.Configuration ??= new Cart.AvCartConfiguration();
+
+        cart.Configuration.AssistantVersion = info.Version;
         await dbContext.SaveChangesAsync();
     }
 
@@ -71,7 +73,7 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
             return;
         }
 
-        await Clients.Caller.SendAsync("StreamInfo", cart.StreamInfos.Where(i => i.Enabled).Select(i => new
+        await Clients.Caller.SendAsync("StreamInfo", cart.Configuration?.StreamInfo?.Where(i => i.Enabled).Select(i => new
         {
             i.Index,
             i.RtmpUrl,
@@ -82,10 +84,6 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
     private async Task<Cart?> GetCart(bool includeStreamInfo = false)
     {
         var query = dbContext.Carts.AsQueryable();
-        if (includeStreamInfo)
-        {
-            query = query.Include(c => c.StreamInfos);
-        }
         return await query.FirstOrDefaultAsync(c => c.Id == CartId);
     }
 

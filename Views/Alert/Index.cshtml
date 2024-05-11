@@ -12,12 +12,14 @@
   </div>
   <div><a asp-action="Manage">Create Alert</a></div>
   @{
-    var alerts = await DbContext.Alerts.OrderByDescending(c => c.CreatedAt).Select(a => new
-    {
-      a.Id,
-      Content = a.Content.Substring(0, 50),
-      a.CreatedAt
-    }).ToListAsync();
+    var alerts = new List<Alert>();
+    // TODO: Implement alerts in postgres
+    // var alerts = await DbContext.Alerts.OrderByDescending(c => c.CreatedAt).Select(a => new
+    // {
+    //   a.Id,
+    //   Content = a.Content.Substring(0, 50),
+    //   a.CreatedAt
+    // }).ToListAsync();
   }
   @if (!alerts.Any())
   {

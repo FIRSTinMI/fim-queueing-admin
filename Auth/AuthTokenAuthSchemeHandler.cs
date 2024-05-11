@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using fim_queueing_admin.Data;
+using fim_queueing_admin.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -38,7 +39,7 @@ public class AuthTokenAuthSchemeHandler(
             return AuthenticateResult.Fail("Failed to retrieve token");
         }
 
-        var cart = await dbContext.Carts.SingleOrDefaultAsync(c => c.AuthToken == token.ToString());
+        var cart = await dbContext.Carts.SingleOrDefaultAsync(c => c.Configuration!.AuthToken == token.ToString());
 
         if (cart is null)
         {

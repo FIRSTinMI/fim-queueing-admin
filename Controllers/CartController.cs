@@ -39,12 +39,12 @@ public class CartController(FimDbContext dbContext) : Controller
     {
         if (!ModelState.IsValid) return View("Manage", model);
 
-        var dbCart = await dbContext.Carts.Include(c => c.StreamInfos).SingleOrDefaultAsync(c => c.Id == id);
+        var dbCart = await dbContext.Carts.SingleOrDefaultAsync(c => c.Id == id);
         if (dbCart is null) return NotFound();
         dbCart.Name = model.Name!;
-        dbCart.TeamViewerId = model.TeamViewerId;
-        dbCart.StreamInfos.Clear();
-        dbCart.StreamInfos = model.StreamInfos.Select((i, idx) => new CartStreamInfo
+        dbCart.TeamviewerId = model.TeamViewerId;
+        dbCart.Configuration ??= new();
+        dbCart.Configuration.StreamInfo = model.StreamInfos.Select((i, idx) => new CartStreamInfo
         {
             CartId = dbCart.Id,
             Index = idx,
@@ -68,17 +68,20 @@ public class CartController(FimDbContext dbContext) : Controller
         var dbCart = new Cart
         {
             Id = cartId,
-            AuthToken = Guid.NewGuid().ToString(),
-            Name = model.Name!,
-            TeamViewerId = model.TeamViewerId,
-            StreamInfos = model.StreamInfos.Select((i, idx) => new CartStreamInfo
+            Configuration = new Cart.AvCartConfiguration
             {
-                CartId = cartId,
-                Index = idx,
-                RtmpKey = i.RtmpKey,
-                RtmpUrl = i.RtmpUrl,
-                Enabled = i.Enabled
-            }).ToList()
+                AuthToken = Guid.NewGuid().ToString(),
+                StreamInfo = model.StreamInfos.Select((i, idx) => new CartStreamInfo
+                {
+                    CartId = cartId,
+                    Index = idx,
+                    RtmpKey = i.RtmpKey,
+                    RtmpUrl = i.RtmpUrl,
+                    Enabled = i.Enabled
+                }).ToList()
+            },
+            Name = model.Name!,
+            TeamviewerId = model.TeamViewerId,
         };
         await dbContext.Carts.AddAsync(dbCart);
         await dbContext.SaveChangesAsync();
@@ -104,13 +107,13 @@ public class CartController(FimDbContext dbContext) : Controller
         public CartManageModel(Cart dbModel)
         {
             Name = dbModel.Name;
-            TeamViewerId = dbModel.TeamViewerId;
-            StreamInfos = dbModel.StreamInfos.Select(i => new StreamInfoManageModel
+            TeamViewerId = dbModel.TeamviewerId;
+            StreamInfos = dbModel.Configuration?.StreamInfo?.Select(i => new StreamInfoManageModel
             {
                 RtmpUrl = i.RtmpUrl,
                 RtmpKey = i.RtmpKey,
                 Enabled = i.Enabled
-            }).ToList();
+            }).ToList() ?? [];
         }
     }
 
