@@ -19,13 +19,23 @@ public class AssistantHub(FimDbContext dbContext, AssistantService assistantServ
     {
         await dbContext.Carts.Where(c => c.Id == CartId).ExecuteUpdateAsync(c => c
             .SetProperty(p => p.Configuration!.LastSeen, DateTime.MaxValue));
+        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
+        if (cart is not null)
+        {
+            cart.Configuration!.LastSeen = DateTime.MaxValue;
+            await dbContext.SaveChangesAsync();
+        }
         await SendPendingAlertsToCaller();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await dbContext.Carts.Where(c => c.Id == CartId).ExecuteUpdateAsync(c => c
-            .SetProperty(p => p.Configuration!.LastSeen, DateTime.UtcNow));
+        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
+        if (cart is not null)
+        {
+            cart.Configuration!.LastSeen = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync();
+        }
     }
 
     /// <summary>
