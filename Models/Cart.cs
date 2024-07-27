@@ -10,7 +10,7 @@ public class Cart : BaseEquipment
     public AvCartConfiguration? Configuration { get; set; } = new();
     
     // TODO: This is not yet implemented in Postgres
-    public ICollection<AlertCart>? AlertCarts { get; set; }
+    // public ICollection<AlertCart>? AlertCarts { get; set; }
     
     public class AvCartConfiguration
     {
@@ -25,9 +25,9 @@ public class CartEntityTypeConfiguration : BaseEquipmentEntityTypeConfiguration<
 {
     protected override void ConfigureEntity(EntityTypeBuilder<Cart> builder)
     {
-        builder
-            .HasMany(a => a.AlertCarts)
-            .WithOne(ac => ac.Cart);
+        // builder
+        //     .HasMany(a => a.AlertCarts)
+        //     .WithOne(ac => ac.Cart);
         builder.HasQueryFilter(c => c.EquipmentType == EquipmentType.AvCart);
         builder.OwnsOne(c => c.Configuration, d =>
         {
