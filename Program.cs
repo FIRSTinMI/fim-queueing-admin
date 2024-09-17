@@ -81,6 +81,7 @@ builder.Services.AddAuthorization(opt =>
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserAccessHandler>();
 builder.Services.AddSingleton<DisplayHubManager>();
+builder.Services.AddScoped<FimRepository>();
 builder.Services.AddSignalR();
 
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>

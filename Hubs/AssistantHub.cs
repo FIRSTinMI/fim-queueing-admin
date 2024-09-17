@@ -10,32 +10,20 @@ using Microsoft.EntityFrameworkCore;
 namespace fim_queueing_admin.Hubs;
 
 [Authorize(AuthTokenScheme.AuthenticationScheme)]
-public class AssistantHub(FimDbContext dbContext, AssistantService assistantService, ILogger<AssistantHub> logger) : Hub
+public class AssistantHub(FimDbContext dbContext, FimRepository repository, AssistantService assistantService, ILogger<AssistantHub> logger) : Hub
 {
     private Guid CartId => Guid.Parse(Context.User?.FindFirst(ClaimTypes.CartId)?.Value ??
                                       throw new ApplicationException("No cart id"));
     
     public override async Task OnConnectedAsync()
     {
-        // await dbContext.Carts.Where(c => c.Id == CartId).ExecuteUpdateAsync(c => c
-        //     .SetProperty(p => p.Configuration!.LastSeen, DateTime.MaxValue));
-        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
-        if (cart is not null)
-        {
-            cart.Configuration!.LastSeen = DateTime.MaxValue;
-            await dbContext.SaveChangesAsync();
-        }
+        await repository.SetCartLastSeen(CartId, DateTime.MaxValue);
         await SendPendingAlertsToCaller();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var cart = await dbContext.Carts.FirstOrDefaultAsync(c => c.Id == CartId);
-        if (cart is not null)
-        {
-            cart.Configuration!.LastSeen = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync();
-        }
+        await repository.SetCartLastSeen(CartId, DateTime.UtcNow);
     }
 
     /// <summary>
