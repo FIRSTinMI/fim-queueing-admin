@@ -8,7 +8,6 @@ namespace fim_queueing_admin.Models;
 public class Cart : BaseEquipment
 {
     public AvCartConfiguration? Configuration { get; set; } = new();
-    public int EquipmentTypeId { get; set; } = 1;
 
     // TODO: This is not yet implemented in Postgres
     // public ICollection<AlertCart>? AlertCarts { get; set; }

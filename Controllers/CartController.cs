@@ -68,6 +68,7 @@ public class CartController(FimDbContext dbContext) : Controller
         var dbCart = new Cart
         {
             Id = cartId,
+            EquipmentType = EquipmentType.AvCart,
             Configuration = new Cart.AvCartConfiguration
             {
                 AuthToken = Guid.NewGuid().ToString(),
