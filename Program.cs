@@ -171,7 +171,7 @@ if (isBehindProxy)
     });
 }
 
-builder.Services.AddHostedService<DatabaseKeepAliveService>();
+// builder.Services.AddHostedService<DatabaseKeepAliveService>();
 
 builder.Services.AddCors(opt =>
 {

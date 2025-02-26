@@ -87,9 +87,8 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
 
     private async Task SendPendingAlertsToCaller()
     {
-        // var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.CartId == CartId && ac.ReadTime == null)
-        //     .Select(ac => ac.Alert).ToListAsync();
-        var pendingAlerts = new List<Alert>();
+        var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.CartId == CartId && ac.ReadTime == null)
+            .Select(ac => ac.Alert).ToListAsync();
 
         await Clients.Caller.SendAsync("PendingAlerts", pendingAlerts);
     }

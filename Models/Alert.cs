@@ -20,6 +20,7 @@ public class AlertEntityTypeConfiguration : IEntityTypeConfiguration<Alert>
     public void Configure(EntityTypeBuilder<Alert> builder)
     {
         builder
+            .ToTable("alerts", "temp")
             .HasMany(a => a.AlertCarts)
             .WithOne(ac => ac.Alert);
     }

@@ -18,9 +18,8 @@ public class AssistantService(IServiceProvider serviceProvider) : IService
         var hubContext = serviceProvider.GetRequiredService<IHubContext<AssistantHub>>();
         var dbContext = serviceProvider.GetRequiredService<FimDbContext>();
         
-        // var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.ReadTime == null)
-        //     .GroupBy(k => k.CartId, v => v.Alert).ToListAsync();
-        var pendingAlerts = new List<IGrouping<Guid, Alert>>();
+        var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.ReadTime == null)
+            .GroupBy(k => k.CartId, v => v.Alert).ToListAsync();
 
         foreach (var group in pendingAlerts)
         {

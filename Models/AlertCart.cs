@@ -19,6 +19,8 @@ public class AlertCartEntityTypeConfiguration : IEntityTypeConfiguration<AlertCa
 {
     public void Configure(EntityTypeBuilder<AlertCart> builder)
     {
-        builder.HasKey(nameof(AlertCart.AlertId), nameof(AlertCart.CartId));
+        builder
+            .ToTable("alert_carts", "temp")
+            .HasKey(nameof(AlertCart.AlertId), nameof(AlertCart.CartId));
     }
 }
