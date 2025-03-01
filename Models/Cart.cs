@@ -10,6 +10,7 @@ public class Cart : BaseEquipment
     public AvCartConfiguration? Configuration { get; set; } = new();
 
     public ICollection<AlertCart>? AlertCarts { get; set; }
+    public ICollection<EquipmentLog>? EquipmentLogs { get; set; }
     
     public class AvCartConfiguration
     {
@@ -33,5 +34,6 @@ public class CartEntityTypeConfiguration : BaseEquipmentEntityTypeConfiguration<
             d.ToJson();
             d.OwnsMany<CartStreamInfo>(c => c.StreamInfo);
         });
+        builder.HasMany<EquipmentLog>(c => c.EquipmentLogs).WithOne().HasForeignKey(l => l.EquipmentId);
     }
 }
