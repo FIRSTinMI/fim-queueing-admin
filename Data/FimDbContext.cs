@@ -17,4 +17,6 @@ public class FimDbContext : DbContext
     public DbSet<Alert> Alerts { get; set; } = null!;
     
     public DbSet<AlertCart> AlertCarts { get; set; } = null!;
+
+    public DbSet<EquipmentLog> EquipmentLogs { get; set; } = null!;
 }

@@ -78,6 +78,23 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
             i.RtmpKey
         }).ToList());
     }
+    
+    public async Task WriteLog(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message) || message.Length > 500)
+        {
+            logger.LogError("Got a bad log message from cart {cart}. Either empty or too long.", CartId);
+        }
+
+        var log = new EquipmentLog
+        {
+            EquipmentId = CartId,
+            LogMessage = message
+        };
+
+        await dbContext.EquipmentLogs.AddAsync(log);
+        await dbContext.SaveChangesAsync();
+    }
 
     private async Task<Cart?> GetCart(bool includeStreamInfo = false)
     {
