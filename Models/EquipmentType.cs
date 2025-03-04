@@ -1,6 +1,6 @@
 namespace fim_queueing_admin.Models;
 
-public enum EquipmentType
+public class EquipmentType
 {
-    AvCart = 1
+    public const int AvCart = 1;
 }

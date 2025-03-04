@@ -19,4 +19,9 @@ public class FimDbContext : DbContext
     public DbSet<AlertCart> AlertCarts { get; set; } = null!;
 
     public DbSet<EquipmentLog> EquipmentLogs { get; set; } = null!;
+    
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties(typeof(Enum)).HaveConversion<string>();
+    }
 }

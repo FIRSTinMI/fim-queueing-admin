@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using fim_queueing_admin;
 using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
@@ -82,7 +84,13 @@ builder.Services.AddAuthorization(opt =>
 builder.Services.AddSingleton<IAuthorizationHandler, UserAccessHandler>();
 builder.Services.AddSingleton<DisplayHubManager>();
 builder.Services.AddScoped<FimRepository>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR().AddJsonProtocol(opt =>
+{
+    opt.PayloadSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+});
 
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(pol =>
 {

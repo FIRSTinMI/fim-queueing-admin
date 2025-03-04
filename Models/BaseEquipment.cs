@@ -12,7 +12,7 @@ namespace fim_queueing_admin.Models;
 public class BaseEquipment
 {
     [Column("equipment_type_id")]
-    public EquipmentType EquipmentType { get; set; }
+    public int EquipmentType { get; set; }
     public Guid Id { get; set; }
     
     [MaxLength(255)]

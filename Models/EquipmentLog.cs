@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,7 +22,7 @@ public class EquipmentLog
     
     public LogSeverity Severity { get; set; } = LogSeverity.Info;
     
-    public object? ExtraInfo { get; set; }
+    public JsonElement? ExtraInfo { get; set; }
 }
 
 public enum LogSeverity

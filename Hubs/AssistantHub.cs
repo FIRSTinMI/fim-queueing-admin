@@ -123,6 +123,6 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
     {
         public string? Category { get; set; }
         public LogSeverity Severity { get; set; } = LogSeverity.Info;
-        public object? ExtraInfo { get; set; }
+        public JsonElement? ExtraInfo { get; set; }
     }
 }
