@@ -79,7 +79,7 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
         }).ToList());
     }
     
-    public async Task WriteLog(string message)
+    public async Task WriteLog(string message, LogData? data = null)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 500)
         {
@@ -89,7 +89,10 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
         var log = new EquipmentLog
         {
             EquipmentId = CartId,
-            LogMessage = message
+            LogMessage = message,
+            Category = data?.Category,
+            Severity = data?.Severity ?? LogSeverity.Info,
+            ExtraInfo = data?.ExtraInfo
         };
 
         await dbContext.EquipmentLogs.AddAsync(log);
@@ -114,5 +117,12 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
     {
         public required string Version { get; set; }
         public required string Hostname { get; set; }
+    }
+
+    public class LogData
+    {
+        public string? Category { get; set; }
+        public LogSeverity Severity { get; set; } = LogSeverity.Info;
+        public object? ExtraInfo { get; set; }
     }
 }

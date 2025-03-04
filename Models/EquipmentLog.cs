@@ -16,9 +16,24 @@ public class EquipmentLog
     public required string LogMessage { get; set; }
     
     public DateTime LogTimeUtc { get; set; } = DateTime.UtcNow;
+    
+    public string? Category { get; set; }
+    
+    public LogSeverity Severity { get; set; } = LogSeverity.Info;
+    
+    public object? ExtraInfo { get; set; }
 }
 
-public class AssistantLogEntityTypeConfiguration : IEntityTypeConfiguration<EquipmentLog>
+public enum LogSeverity
+{
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal
+}
+
+public class EquipmentLogEntityTypeConfiguration : IEntityTypeConfiguration<EquipmentLog>
 {
     public void Configure(EntityTypeBuilder<EquipmentLog> builder)
     {
