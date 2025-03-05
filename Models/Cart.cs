@@ -14,8 +14,8 @@ public class Cart : BaseEquipment
     
     public class AvCartConfiguration
     {
-        public string AuthToken { get; set; }
-        public string AssistantVersion { get; set; }
+        public string? AuthToken { get; set; }
+        public string? AssistantVersion { get; set; }
         public DateTime? LastSeen { get; set; }
         public IEnumerable<CartStreamInfo>? StreamInfo { get; set; }
     }

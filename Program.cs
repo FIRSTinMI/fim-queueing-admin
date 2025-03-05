@@ -19,6 +19,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using SlackNet;
+using softaware.Authentication.Hmac;
+using softaware.Authentication.Hmac.AspNetCore;
+using softaware.Authentication.Hmac.AuthorizationProvider;
 using TwitchLib.Api;
 using Action = fim_queueing_admin.Auth.Action;
 
@@ -56,22 +59,38 @@ builder.Services.AddDbContext<FimDbContext>(opt =>
 builder.Services.AddSingleton<FirebaseAuth>(_ => FirebaseAuth.DefaultInstance);
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(opt =>
-{
-    opt.LoginPath = "/Home/Login";
-    opt.SlidingExpiration = true;
-    opt.ExpireTimeSpan = TimeSpan.FromDays(31);
-    opt.AccessDeniedPath = "/Home/AccessDenied";
-}).AddScheme<AuthTokenAuthSchemeOptions, AuthTokenAuthSchemeHandler>(AuthTokenScheme.AuthenticationScheme, _ => { });
+
+builder.Services.AddMemoryCache();
+builder.Services.AddTransient<IHmacAuthorizationProvider>(_ =>
+    new MemoryHmacAuthenticationProvider((builder.Configuration
+        .GetRequiredSection("Service2Service:Apps")
+        .Get<HmacAuthenticationClientConfiguration[]>() ?? [])
+        .ToDictionary(e => e.AppId, e => e.ApiKey)));
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(opt =>
+    {
+        opt.LoginPath = "/Home/Login";
+        opt.SlidingExpiration = true;
+        opt.ExpireTimeSpan = TimeSpan.FromDays(31);
+        opt.AccessDeniedPath = "/Home/AccessDenied";
+    })
+    .AddScheme<AuthTokenAuthSchemeOptions, AuthTokenAuthSchemeHandler>(AuthTokenScheme.AuthenticationScheme, _ => { })
+    .AddHmacAuthentication(HmacAuthenticationDefaults.AuthenticationScheme, "Service2Service", opt =>
+    {
+        opt.MaxRequestAgeInSeconds = 15;
+    });
 
 builder.Services.AddAuthorization(opt =>
 {
     opt.DefaultPolicy = new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser().Build();
 
-    var authTokenPolicy =
-        new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireClaim(ClaimTypes.CartId).Build();
-    opt.AddPolicy(AuthTokenScheme.AuthenticationScheme, authTokenPolicy);
+    opt.AddPolicy(AuthTokenScheme.AuthenticationScheme,
+        new AuthorizationPolicyBuilder(AuthTokenScheme.AuthenticationScheme).RequireClaim(ClaimTypes.CartId).Build());
+
+    opt.AddPolicy(HmacAuthenticationDefaults.AuthenticationScheme,
+        new AuthorizationPolicyBuilder(HmacAuthenticationDefaults.AuthenticationScheme).RequireAuthenticatedUser()
+            .Build());
 
     foreach (var action in typeof(Action).GetFields().Select(f => (string)f.GetValue(null)!))
     {

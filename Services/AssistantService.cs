@@ -11,11 +11,10 @@ namespace fim_queueing_admin.Services;
 /// <summary>
 /// Helpers for interfacing with AssistantHub clients
 /// </summary>
-public class AssistantService(IServiceProvider serviceProvider) : IService
+public class AssistantService(IServiceProvider serviceProvider, IHubContext<AssistantHub> hubContext, ILogger<AssistantService> logger) : IService
 {
     public async Task SendPendingAlertsToEveryone()
     {
-        var hubContext = serviceProvider.GetRequiredService<IHubContext<AssistantHub>>();
         var dbContext = serviceProvider.GetRequiredService<FimDbContext>();
         
         var pendingAlerts = await dbContext.AlertCarts.Where(ac => ac.ReadTime == null)
@@ -31,7 +30,6 @@ public class AssistantService(IServiceProvider serviceProvider) : IService
     {
         var season = serviceProvider.GetRequiredService<GlobalState>().CurrentSeason;
         var rtdb = serviceProvider.GetRequiredService<FirebaseClient>();
-        var hubContext = serviceProvider.GetRequiredService<IHubContext<AssistantHub>>();
 
         var events = await rtdb.Child($"/seasons/{season}/events").OrderBy("cartId").EqualTo(cartId.ToString())
             .OnceAsync<DbEvent>();
@@ -45,5 +43,19 @@ public class AssistantService(IServiceProvider serviceProvider) : IService
             e.Object.end,
             state = e.Object.state?.ToString()
         }));
+    }
+
+    public async Task StartStreamForCart(Guid cartId, int? streamNumber)
+    {
+        logger.LogInformation("Starting {stream} for cart {cartId}",
+            streamNumber is null ? "all streams" : $"stream {streamNumber}", cartId);
+        await hubContext.Clients.User(cartId.ToString()).SendAsync("StartStream", streamNumber);
+    }
+    
+    public async Task StopStreamForCart(Guid cartId, int? streamNumber)
+    {
+        logger.LogInformation("Stopping {stream} for cart {cartId}",
+            streamNumber is null ? "all streams" : $"stream {streamNumber}", cartId);
+        await hubContext.Clients.User(cartId.ToString()).SendAsync("StopStream", streamNumber);
     }
 }
