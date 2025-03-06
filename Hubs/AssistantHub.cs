@@ -71,12 +71,7 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
             return;
         }
 
-        await Clients.Caller.SendAsync("StreamInfo", cart.Configuration?.StreamInfo?.Where(i => i.Enabled).Select(i => new
-        {
-            i.Index,
-            i.RtmpUrl,
-            i.RtmpKey
-        }).ToList());
+        await assistantService.PushStreamKeys(cart, Clients.Caller);
     }
     
     public async Task WriteLog(string message, LogData? data = null)

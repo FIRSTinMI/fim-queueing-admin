@@ -58,4 +58,16 @@ public class AssistantService(IServiceProvider serviceProvider, IHubContext<Assi
             streamNumber is null ? "all streams" : $"stream {streamNumber}", cartId);
         await hubContext.Clients.User(cartId.ToString()).SendAsync("StopStream", streamNumber);
     }
+
+    public async Task PushStreamKeys(Cart cart, IClientProxy? clients = null)
+    {
+        clients ??= hubContext.Clients.User(cart.Id.ToString());
+        
+        await clients.SendAsync("StreamInfo", cart.Configuration?.StreamInfo?.Where(i => i.Enabled).Select(i => new
+        {
+            i.Index,
+            i.RtmpUrl,
+            i.RtmpKey
+        }).ToList());
+    }
 }
