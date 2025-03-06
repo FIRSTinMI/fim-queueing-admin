@@ -17,12 +17,36 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
     
     public override async Task OnConnectedAsync()
     {
+        var log = new EquipmentLog
+        {
+            EquipmentId = CartId,
+            LogMessage = "Admin SignalR Connection Established",
+            Category = "General",
+            Severity = LogSeverity.Info,
+            ExtraInfo = null
+        };
+        await dbContext.EquipmentLogs.AddAsync(log);
+        await dbContext.SaveChangesAsync();
         await repository.SetCartLastSeen(CartId, DateTime.MaxValue);
         await SendPendingAlertsToCaller();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        var log = new EquipmentLog
+        {
+            EquipmentId = CartId,
+            LogMessage = "Admin SignalR Connection Lost",
+            Category = "General",
+            Severity = LogSeverity.Info,
+            ExtraInfo = JsonSerializer.SerializeToElement(new
+            {
+                Exception = exception?.ToString()
+            })
+        };
+        await dbContext.EquipmentLogs.AddAsync(log);
+        await dbContext.SaveChangesAsync();
+        
         await repository.SetCartLastSeen(CartId, DateTime.UtcNow);
     }
 
