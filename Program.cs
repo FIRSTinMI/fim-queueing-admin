@@ -78,6 +78,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddHmacAuthentication(HmacAuthenticationDefaults.AuthenticationScheme, "Service2Service", opt =>
     {
         opt.MaxRequestAgeInSeconds = 15;
+        opt.TrustProxy = bool.TryParse(builder.Configuration["EnableForwardedHeaders"], out var b) && b;
     });
 
 builder.Services.AddAuthorization(opt =>
