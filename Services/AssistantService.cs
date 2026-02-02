@@ -28,21 +28,16 @@ public class AssistantService(IServiceProvider serviceProvider, IHubContext<Assi
 
     public async Task SendEventsToCart(Guid cartId)
     {
-        var season = serviceProvider.GetRequiredService<GlobalState>().CurrentSeason;
-        var rtdb = serviceProvider.GetRequiredService<FirebaseClient>();
+        var dbContext = serviceProvider.GetRequiredService<FimDbContext>();
 
-        var events = await rtdb.Child($"/seasons/{season}/events").OrderBy("cartId").EqualTo(cartId.ToString())
-            .OnceAsync<DbEvent>();
+        var route = (await dbContext.Carts.FindAsync(cartId))?.TruckRouteId;
+        var events = route is not null
+            ? await dbContext.Events.Where(e =>
+                e.TruckRouteId == route && e.Season!.StartTime <= DateTime.UtcNow &&
+                e.Season!.EndTime >= DateTime.UtcNow).OrderBy(e => e.StartTime).ToListAsync()
+            : [];
 
-        await hubContext.Clients.User(cartId.ToString()).SendAsync("Events", events.Select(e => new
-        {
-            eventKey = e.Key,
-            e.Object.eventCode,
-            e.Object.name,
-            e.Object.start,
-            e.Object.end,
-            state = e.Object.state?.ToString()
-        }));
+        await hubContext.Clients.User(cartId.ToString()).SendAsync("Events", events);
     }
 
     public async Task StartStreamForCart(Guid cartId, int? streamNumber)

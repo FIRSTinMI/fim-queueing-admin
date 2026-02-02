@@ -19,7 +19,7 @@ public class BaseEquipment
     public required string Name { get; set; }
     [MaxLength(16)]
     public string? TeamviewerId { get; set; }
-
+    public int? TruckRouteId { get; set; }
 }
 
 public abstract class BaseEquipmentEntityTypeConfiguration<T> : IEntityTypeConfiguration<T> where T : BaseEquipment

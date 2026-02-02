@@ -106,6 +106,7 @@ public class EventController(FirebaseClient client, GlobalState state) : Control
         }));
 
         var notifyTasks = new List<Task>();
+        // TODO: Listen to supabase to notify carts of changes
         if (oldCartId is not null && oldCartId != cartId)
             notifyTasks.Add(assistantService.SendEventsToCart(oldCartId.Value));
         if (cartId is not null) notifyTasks.Add(assistantService.SendEventsToCart(cartId.Value));
