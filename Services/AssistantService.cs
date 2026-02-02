@@ -37,6 +37,14 @@ public class AssistantService(IServiceProvider serviceProvider, IHubContext<Assi
                 e.Season!.EndTime >= DateTime.UtcNow).OrderBy(e => e.StartTime).ToListAsync()
             : [];
 
+        foreach (var evt in events)
+        {
+            if (evt.StartTime >= DateTime.UtcNow || evt.EndTime <= DateTime.UtcNow)
+            {
+                evt.Key = "(unavailable)";
+            }
+        }
+
         await hubContext.Clients.User(cartId.ToString()).SendAsync("Events", events);
     }
 
