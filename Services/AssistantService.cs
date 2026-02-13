@@ -1,8 +1,6 @@
 using fim_queueing_admin.Data;
 using fim_queueing_admin.Hubs;
 using fim_queueing_admin.Models;
-using Firebase.Database;
-using Firebase.Database.Query;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,5 +70,13 @@ public class AssistantService(IServiceProvider serviceProvider, IHubContext<Assi
             i.RtmpUrl,
             i.RtmpKey
         }).ToList());
+    }
+
+    public async Task<string?> GetVmixConfig(Guid cartId)
+    {
+        if (!AssistantHub.CartConnectionMap.TryGetValue(cartId, out var connId)) return null;
+
+        var cancelSource = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        return await hubContext.Clients.Client(connId).InvokeAsync<string>("GetVmixConfig", cancelSource.Token);
     }
 }

@@ -35,4 +35,19 @@ public class AssistantController(AssistantService assistantService) : Controller
         await assistantService.PushStreamKeys(cart);
         return TypedResults.Ok();
     }
+    
+    [HttpGet("VmixConfig/{cartId:guid:required}")]
+    public async Task<Results<Ok<string>, NoContent>> GetVmixConfig([FromRoute] Guid cartId)
+    {
+        try
+        {
+            var resp = await assistantService.GetVmixConfig(cartId);
+            if (resp is null) return TypedResults.NoContent();
+            return TypedResults.Ok(resp);
+        }
+        catch (OperationCanceledException)
+        {
+            return TypedResults.NoContent();
+        }
+    }
 }
