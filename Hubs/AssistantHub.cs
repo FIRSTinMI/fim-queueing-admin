@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using fim_queueing_admin.Auth;
 using fim_queueing_admin.Data;
@@ -15,7 +16,7 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
     private Guid CartId => Guid.Parse(Context.User?.FindFirst(ClaimTypes.CartId)?.Value ??
                                       throw new ApplicationException("No cart id"));
 
-    public static Dictionary<Guid, string> CartConnectionMap { get; set; } = new();
+    public static ConcurrentDictionary<Guid, string> CartConnectionMap { get; set; } = new();
     
     public override async Task OnConnectedAsync()
     {
@@ -37,7 +38,7 @@ public class AssistantHub(FimDbContext dbContext, FimRepository repository, Assi
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         if (CartConnectionMap.TryGetValue(CartId, out var mappedConn) && mappedConn == Context.ConnectionId)
-            CartConnectionMap.Remove(CartId);
+            CartConnectionMap.Remove(CartId, out _);
         
         var log = new EquipmentLog
         {
